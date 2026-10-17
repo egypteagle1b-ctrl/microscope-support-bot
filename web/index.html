@@ -449,19 +449,198 @@ input::placeholder{color:var(--muted)}
 }
 .tree-search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
 
-/* ── Responsive ── */
-@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:620px){
-  :root{--sidebar:0px}
-  #sidebar{transform:translateX(-220px);width:220px}
-  #sidebar.open{transform:none;box-shadow:4px 0 40px rgba(0,0,0,.6)}
-  #main{margin-left:0}
-  .grid-4,.grid-2{grid-template-columns:1fr}
-  #content{padding:16px}
-  .live-pill{display:none}
-  .tree-material{margin-left:30px}
-  .tree-row.subject-row{margin-left:12px}
-  .tree-row.type-row{margin-left:24px}
+/* ── Responsive & Mobile-First Overhaul ── */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-toggle-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.sidebar-toggle-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.sidebar-toggle-btn .hamburger-bar {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  margin-left: auto;
+  transition: all 0.2s;
+}
+.sidebar-close-btn:hover {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 1024px) {
+  :root { --sidebar: 0px; --hdr: 70px; }
+  .sidebar-toggle-btn { display: flex; }
+  .sidebar-close-btn { display: flex; }
+  
+  #sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    border-radius: 0 24px 24px 0;
+    transform: translateX(-105%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    z-index: 999;
+    box-shadow: none;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+    box-shadow: 10px 0 50px rgba(0,0,0,0.85);
+  }
+  
+  #main {
+    margin-left: 0 !important;
+    width: 100%;
+    min-height: 100vh;
+  }
+  #header {
+    padding: 10px 16px;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #header::-webkit-scrollbar { display: none; }
+  #header > div:last-child {
+    gap: 8px;
+  }
+  #header .btn-sm {
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  #content {
+    padding: 0 14px 24px;
+    max-height: none;
+    overflow-y: visible;
+  }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  :root { --r: 16px; }
+  body { font-size: 13px; }
+  #header {
+    height: auto;
+    min-height: 60px;
+    padding: 8px 12px;
+  }
+  .status-dot { width: 8px; height: 8px; }
+  #status-lbl { font-size: 0.75rem; }
+  .live-pill { display: none; }
+  
+  .grid-4, .grid-3, .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+  .stat-card {
+    padding: 18px 16px;
+  }
+  .stat-val {
+    font-size: 2rem;
+  }
+  .card {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+  .sec-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .sec-head .actions {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sec-head .actions .btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+    font-size: 0.82rem;
+  }
+  
+  /* Tables Touch Overhaul */
+  .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    margin: 0 -4px;
+  }
+  table th, table td {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  
+  /* Modals */
+  .modal-box {
+    width: 95% !important;
+    max-width: 95vw !important;
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+    margin: 10px auto !important;
+    max-height: 90vh !important;
+  }
 }
 
 /* Image Preview */
@@ -484,11 +663,15 @@ input::placeholder{color:var(--muted)}
 </head>
 <body>
 
+<!-- Mobile Backdrop -->
+<div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
+
 <!-- ─── Sidebar ─── -->
 <nav id="sidebar">
-  <div class="brand">
+  <div class="brand" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap">
     <h1>🔬 <span data-i18n="Bot Panel">Bot Panel</span></h1>
-    <small data-i18n="Admin Dashboard">Admin Dashboard</small>
+    <button id="sidebar-close-btn" class="sidebar-close-btn" onclick="toggleMobileSidebar(false)" aria-label="Close menu">✕</button>
+    <small data-i18n="Admin Dashboard" style="width:100%">Admin Dashboard</small>
   </div>
   <div class="nav-items" id="nav-menu">
     <div class="nav-item active" data-s="overview"><span class="icon">🏠</span><span data-i18n="Overview">Overview</span></div>
@@ -531,6 +714,11 @@ input::placeholder{color:var(--muted)}
 <!-- ─── Main ─── -->
 <div id="main">
   <div id="header">
+    <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" onclick="toggleMobileSidebar()" aria-label="Toggle menu">
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+    </button>
     <div class="status-dot" id="sdot"></div>
     <span id="status-lbl">Checking...</span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
@@ -672,6 +860,29 @@ input::placeholder{color:var(--muted)}
 
 // Safely encode a string for use inside single-quoted onclick attributes
 function encodeStr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+/* ── Mobile Sidebar Drawer Control ── */
+function toggleMobileSidebar(open) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if(!sidebar || !backdrop) return;
+  const shouldOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+  if(shouldOpen) {
+    sidebar.classList.add('open');
+    backdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  } else {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+document.addEventListener('click', (e) => {
+  const navItem = e.target.closest('#nav-menu .nav-item');
+  if (navItem && window.innerWidth <= 1024) {
+    toggleMobileSidebar(false);
+  }
+});
 
 /* ═══════════════════════════════════════════════
    Auth — Telegram ID Login
