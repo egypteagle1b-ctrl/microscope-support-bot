@@ -463,6 +463,14 @@ input[type="file"]::file-selector-button:hover {
 
 </form>
 
+<!-- ── Closed Notice ── -->
+<div id="closedNotice" class="form-card" style="display: none; text-align: center; padding: 45px 25px; max-width: 520px; margin: 30px auto; border-radius: 20px; border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.08);">
+  <div style="font-size: 3.8rem; margin-bottom: 12px;">⏸️</div>
+  <h2 style="color: #ef4444; font-size: 1.85rem; margin-bottom: 8px; font-weight: 800;">باب التسجيل مغلق حالياً</h2>
+  <p style="color: var(--dim); font-size: 1.05rem; line-height: 1.6; margin: 0 0 20px 0;">نعتذر، لقد تم إيقاف استقبال طلبات تسجيل الأعضاء الجدد مؤقتاً من قِبل إدارة المنظومة.</p>
+  <div style="font-size: 0.9rem; color: #94a3b8;">يرجى مراجعة إدارة الفريق أو متابعة القناة الرسمية لمعرفة موعد فتح التسجيل القادم.</div>
+</div>
+
 <!-- ── Success Message ───────────────────────────────────────────────────── -->
 <div id="successMessage" class="form-card" style="display: none; text-align: center; padding: 45px 25px; max-width: 520px; margin: 30px auto; border-radius: 20px;">
   <div style="font-size: 3.8rem; margin-bottom: 12px;">✅</div>
@@ -531,8 +539,12 @@ function previewUpload(input) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // NOTE: We no longer permanently block re-registration from the same device.
-  // The "Add Another" button handles new submissions within the same session.
+  if (localStorage.getItem('mm_form_open') === 'false') {
+    const formEl = document.getElementById('memberForm');
+    const noticeEl = document.getElementById('closedNotice');
+    if (formEl) formEl.style.display = 'none';
+    if (noticeEl) noticeEl.style.display = 'block';
+  }
 });
 
 document.getElementById('memberForm').addEventListener('submit', function(e) {
