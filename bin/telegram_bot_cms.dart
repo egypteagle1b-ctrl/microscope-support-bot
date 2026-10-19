@@ -378,14 +378,57 @@ Future<void> _handleWebRequest(HttpRequest req, Bot bot) async {
       req.response.write('HR module not found');
     }
 
-  } else if (path.startsWith('/web/') || path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.webp') || path.endsWith('.svg')) {
-    // Serve static images and web assets
+  } else if (path == '/mission-admin.html' || path == '/mission-admin') {
+    // Serve the Mission Admin Dashboard
+    final missionFile = File('web/mission-admin.html');
+    if (await missionFile.exists()) {
+      final html = await missionFile.readAsString();
+      req.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType.html
+        ..write(html);
+    } else {
+      req.response.statusCode = 404;
+      req.response.write('Mission admin page not found');
+    }
+
+  } else if (path == '/mission-view.html' || path == '/mission-view' || path == '/mission') {
+    // Serve the Public Mission View page
+    final missionViewFile = File('web/mission-view.html');
+    if (await missionViewFile.exists()) {
+      final html = await missionViewFile.readAsString();
+      req.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType.html
+        ..write(html);
+    } else {
+      req.response.statusCode = 404;
+      req.response.write('Mission view page not found');
+    }
+
+  } else if (path.startsWith('/web/') || 
+             path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.jpeg') || 
+             path.endsWith('.webp') || path.endsWith('.svg') || 
+             path.endsWith('.css') || path.endsWith('.js') || path.endsWith('.json') ||
+             path.endsWith('.ico') || path.endsWith('.woff') || path.endsWith('.woff2') || path.endsWith('.ttf')) {
+    // Serve static images and web assets (including css and js)
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
     final filePath = cleanPath.startsWith('web/') ? cleanPath : 'web/$cleanPath';
     final file = File(filePath);
     if (await file.exists()) {
       final ext = path.split('.').last.toLowerCase();
-      final mime = ext == 'png' ? 'image/png' : ext == 'jpg' || ext == 'jpeg' ? 'image/jpeg' : ext == 'svg' ? 'image/svg+xml' : 'application/octet-stream';
+      final mime = ext == 'png' ? 'image/png' 
+                 : (ext == 'jpg' || ext == 'jpeg') ? 'image/jpeg' 
+                 : ext == 'svg' ? 'image/svg+xml' 
+                 : ext == 'webp' ? 'image/webp'
+                 : ext == 'css' ? 'text/css' 
+                 : ext == 'js' ? 'application/javascript' 
+                 : ext == 'json' ? 'application/json'
+                 : ext == 'ico' ? 'image/x-icon'
+                 : ext == 'woff' ? 'font/woff'
+                 : ext == 'woff2' ? 'font/woff2'
+                 : ext == 'ttf' ? 'font/ttf'
+                 : 'application/octet-stream';
       req.response
         ..statusCode = 200
         ..headers.contentType = ContentType.parse(mime);
