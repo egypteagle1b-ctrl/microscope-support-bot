@@ -146,18 +146,19 @@
     <div class="login-title">MICROSCOPE MISSION</div>
     <div class="login-sub">أدخل Telegram Admin ID أو كلمة المرور للمتابعة</div>
 
-    <form id="loginForm" onsubmit="handleLoginSubmit(event)" style="margin-top:18px">
+    <form id="loginForm" onsubmit="handleLoginSubmit(event); return false;" style="margin-top:18px">
       <div class="form-group" style="position:relative;margin-bottom:14px">
         <input type="password" id="adminPasswordInput" class="form-control" 
-               placeholder="أدخل ID الأدمن (7600319381) أو الباسورد..." 
-               style="text-align:center;font-size:15px;letter-spacing:1px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600" 
-               autofocus autocomplete="current-password">
+               placeholder="أدخل كلمة المرور أو رمز الأدمن..." 
+               style="text-align:center;font-size:16px;letter-spacing:2px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600" 
+               autofocus autocomplete="current-password"
+               onkeydown="if(event.key==='Enter'){handleLoginSubmit(event);}">
         <button type="button" onclick="togglePassVisibility()" 
                 style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px" 
                 id="togglePassBtn" title="إظهار / إخفاء">👁️</button>
       </div>
       <div class="pin-error" id="pinError" style="margin-bottom:14px;font-size:13px;font-weight:600;min-height:20px;color:var(--accent-red);line-height:1.4"></div>
-      <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700">🔓 تسجيل الدخول</button>
+      <button type="button" id="loginSubmitBtn" onclick="handleLoginSubmit(event)" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700;box-shadow:0 4px 18px rgba(6,182,212,0.35);cursor:pointer">🔓 تسجيل الدخول</button>
     </form>
 
     <div style="margin-top:20px">
@@ -389,19 +390,30 @@ function togglePassVisibility() {
   }
 }
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .trim();
+}
+
 function handleLoginSubmit(e) {
-  if (e) e.preventDefault();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
   const input = document.getElementById('adminPasswordInput');
-  const val = input ? input.value.trim() : '';
+  const raw = input ? input.value : '';
+  const val = normalizeDigits(raw);
   doLogin(val);
 }
 
 function doLogin(entered) {
   const errEl = document.getElementById('pinError');
-  const adminPin = getAdminPin();
+  const adminPin = normalizeDigits(getAdminPin());
   
   if (!entered) {
-    errEl.textContent = '⚠️ يرجى إدخال الـ ID أو كلمة المرور للمتابعة.';
+    if (errEl) errEl.textContent = '⚠️ يرجى إدخال كلمة المرور أو رمز الأدمن للمتابعة.';
+    const input = document.getElementById('adminPasswordInput');
+    if (input) input.focus();
     return;
   }
 
@@ -409,14 +421,16 @@ function doLogin(entered) {
   if (entered === adminPin || entered === '7600319381') {
     sessionActive = true;
     sessionStorage.setItem('mm_admin_logged', 'true');
-    errEl.textContent = '';
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('adminContent').style.display = 'block';
-    setLinks();
-    renderAdmin();
+    if (errEl) errEl.textContent = '';
+    const lp = document.getElementById('loginPage');
+    const ac = document.getElementById('adminContent');
+    if (lp) lp.style.display = 'none';
+    if (ac) ac.style.display = 'block';
+    try { setLinks(); } catch(e) { console.warn('setLinks error:', e); }
+    try { renderAdmin(); } catch(e) { console.error('renderAdmin error:', e); }
   } else {
-    // Shows user is not registered / wrong password
-    errEl.textContent = '❌ عذراً، أنت غير مسجل كمسؤول أو كلمة المرور غير صحيحة.';
+    // Shows wrong password / not authorized
+    if (errEl) errEl.textContent = '❌ عذراً، كلمة المرور أو رمز الأدمن غير صحيح.';
     const input = document.getElementById('adminPasswordInput');
     if (input) {
       input.value = '';
@@ -445,10 +459,15 @@ function setLinks() {
   const vLink = base + 'mission-view.html';
   const aLink = base + 'mission-admin.html';
 
-  document.getElementById('viewLink').textContent = vLink;
-  document.getElementById('viewLinkBtn').href = vLink;
-  document.getElementById('adminLink').textContent = aLink;
-  document.getElementById('adminLinkBtn').href = aLink;
+  const vl = document.getElementById('viewLink');
+  const vlb = document.getElementById('viewLinkBtn');
+  const al = document.getElementById('adminLink');
+  const alb = document.getElementById('adminLinkBtn');
+
+  if (vl) vl.textContent = vLink;
+  if (vlb) vlb.href = vLink;
+  if (al) al.textContent = aLink;
+  if (alb) alb.href = aLink;
 }
 
 function copyLink(id) {
@@ -693,9 +712,9 @@ function renderAdmin() {
 
         <div style="padding-top:10px;font-size:11px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap">
           <span>📅 أُنشئت: ${formatDate(task.createdAt)}</span>
-          ${task.timeline.received ? `<span>📥 استُلمت: ${formatDate(task.timeline.received)}</span>` : ''}
-          ${task.timeline.progress ? `<span>⚡ بدأت: ${formatDate(task.timeline.progress)}</span>` : ''}
-          ${task.timeline.done     ? `<span>✅ اكتملت: ${formatDate(task.timeline.done)}</span>` : ''}
+          ${(task.timeline && task.timeline.received) ? `<span>📥 استُلمت: ${formatDate(task.timeline.received)}</span>` : ''}
+          ${(task.timeline && task.timeline.progress) ? `<span>⚡ بدأت: ${formatDate(task.timeline.progress)}</span>` : ''}
+          ${(task.timeline && task.timeline.done)     ? `<span>✅ اكتملت: ${formatDate(task.timeline.done)}</span>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -761,8 +780,8 @@ if (sessionStorage.getItem('mm_admin_logged') === 'true') {
   sessionActive = true;
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('adminContent').style.display = 'block';
-  setLinks();
-  renderAdmin();
+  try { setLinks(); } catch(e) { console.warn('setLinks error:', e); }
+  try { renderAdmin(); } catch(e) { console.error('renderAdmin error:', e); }
 }
 </script>
 </body>

@@ -3893,7 +3893,7 @@ const S = {
                     <span class="preview-badge" style="background:rgba(6,182,212,0.2);color:#67e8f9;border:1px solid rgba(6,182,212,0.4)">لوحة الإدارة + شاشة العرض</span>
                   </div>
                 </div>
-                <span class="badge badge-s" style="background:rgba(6,182,212,0.15);color:#38bdf8">PIN: 7600319381</span>
+                <span class="badge badge-s" style="background:rgba(6,182,212,0.15);color:#38bdf8">🔒 محمي برمز مرور</span>
               </div>
               <p class="portal-card-desc">
                 منظومة إسناد ومتابعة مهام اللجان بالتايم لاين التفصيلي، وإمكانية تفعيل/إيقاف المهام، مع رابط عام وشاشة عرض مخصصة لأعضاء اللجان.
@@ -3902,7 +3902,7 @@ const S = {
                 <div style="font-size:12px;color:var(--dim)">
                   📊 الإحصائيات: <strong style="color:#fff">${mTotal}</strong> مهمة | <span style="color:#f59e0b">⚡ ${mActive} جارية</span> | <span style="color:#10b981">✅ ${mDone} مكتملة</span>
                 </div>
-                <button class="btn btn-ghost btn-sm" onclick="S.portal.copyText('7600319381', 'تم نسخ رمز الأدمن 7600319381')" style="font-size:11px">🔑 نسخ الـ ID</button>
+                <span style="font-size:11px;color:var(--dim)">🔐 للمسؤولين فقط</span>
               </div>
             </div>
 
@@ -3930,6 +3930,19 @@ const S = {
                 </div>
                 <span class="badge badge-p">${totalMembers} عضو</span>
               </div>
+
+              <!-- Team Banner & QR Preview Image -->
+              <div style="position:relative;width:100%;height:140px;border-radius:12px;overflow:hidden;margin:12px 0;border:1px solid rgba(99,102,241,0.3);background:#090d16;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,0.3)" onclick="S.portal.openPreview('${teamUrl}', '🌐 صفحة التيم الرسمية (3D Team)', 'TEAM SHOWCASE')">
+                <img src="team_banner.png" alt="Microscope Team Banner" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%);pointer-events:none"></div>
+                <div style="position:absolute;bottom:8px;right:10px;left:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none">
+                  <span style="font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,0.65);padding:3px 8px;border-radius:6px;backdrop-filter:blur(4px);display:flex;align-items:center;gap:4px">🔬 بانر الفريق الرسمي</span>
+                  <button type="button" class="btn btn-sm" onclick="event.stopPropagation();S.portal.openQr('${teamUrl}', 'صفحة التيم الرسمية (Team 3D)')" style="pointer-events:auto;font-size:11px;padding:3px 10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:6px;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 10px rgba(99,102,241,0.5);font-weight:700">
+                    📱 باركود QR
+                  </button>
+                </div>
+              </div>
+
               <p class="portal-card-desc">
                 المعرض التفاعلي ثلاثي الأبعاد الموجه للجمهور والطلاب، لعرض بطاقات أعضاء الفريق، الهيكل التنظيمي، اللجان، والبانر الرسمي.
               </p>
@@ -3937,7 +3950,10 @@ const S = {
                 <div style="font-size:12px;color:var(--dim)">
                   👥 الأعضاء الظاهرون: <strong style="color:#fff">${totalMembers}</strong> أعضاء | 🖼️ البانر مفعّل
                 </div>
-                <a href="/hr.html" target="_blank" class="btn btn-ghost btn-sm" style="font-size:11px">🖼️ تعديل البانر</a>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-ghost btn-sm" onclick="S.portal.openQr('${teamUrl}', 'صفحة التيم الرسمية (Team 3D)')" style="font-size:11px;color:#a5b4fc">📱 رمز QR</button>
+                  <a href="/hr.html" target="_blank" class="btn btn-ghost btn-sm" style="font-size:11px">🖼️ تعديل البانر</a>
+                </div>
               </div>
             </div>
 
@@ -4038,16 +4054,16 @@ const S = {
                     <span class="preview-badge" style="background:rgba(236,72,153,0.2);color:#fbcfe8;border:1px solid rgba(236,72,153,0.4)">منظومة الموارد البشرية</span>
                   </div>
                 </div>
-                <span class="badge badge-p">PIN: 7600319381</span>
+                <span class="badge badge-p">🔒 محمي برمز مرور</span>
               </div>
               <p class="portal-card-desc">
                 النظام المتقدم الخاص بفريق الموارد البشرية لتقييم أداء رؤساء وأعضاء اللجان شهرين وفصلياً ورفع تقارير الأداء ومتابعة الحضور.
               </p>
               <div class="portal-meta-box">
                 <div style="font-size:12px;color:var(--dim)">
-                  👑 صلاحية الدخول: <strong style="color:#fff">Super Admin & Heads</strong> | الرمز: <code style="color:#f472b6">7600319381</code>
+                  👑 صلاحية الدخول: <strong style="color:#fff">Super Admin & Heads</strong>
                 </div>
-                <button class="btn btn-ghost btn-sm" onclick="S.portal.copyText('7600319381', 'تم نسخ رمز الدخول لنظام HR')" style="font-size:11px">🔑 نسخ الرمز</button>
+                <span style="font-size:11px;color:var(--dim)">🔐 محمي برمز الأدمن</span>
               </div>
             </div>
 
