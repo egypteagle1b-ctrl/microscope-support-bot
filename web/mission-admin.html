@@ -143,22 +143,25 @@
 <div id="loginPage" class="login-page">
   <div class="login-card">
     <div class="login-icon">🔬</div>
-    <div class="login-title">ADMIN PANEL</div>
-    <div class="login-sub">أدخل رمز PIN للوصول إلى لوحة الإدارة</div>
+    <div class="login-title">MICROSCOPE MISSION</div>
+    <div class="login-sub">أدخل Telegram Admin ID أو كلمة المرور للمتابعة</div>
 
-    <form id="loginForm" onsubmit="checkPin(event)">
-      <div class="login-pin" id="pinInputs">
-        <input type="password" class="pin-digit" maxlength="1" id="pin0" oninput="pinNext(this, 1)" inputmode="numeric" autofocus>
-        <input type="password" class="pin-digit" maxlength="1" id="pin1" oninput="pinNext(this, 2)" onkeydown="pinBack(event, 0)" inputmode="numeric">
-        <input type="password" class="pin-digit" maxlength="1" id="pin2" oninput="pinNext(this, 3)" onkeydown="pinBack(event, 1)" inputmode="numeric">
-        <input type="password" class="pin-digit" maxlength="1" id="pin3" oninput="checkAutoPin()" onkeydown="pinBack(event, 2)" inputmode="numeric">
+    <form id="loginForm" onsubmit="handleLoginSubmit(event)" style="margin-top:18px">
+      <div class="form-group" style="position:relative;margin-bottom:14px">
+        <input type="password" id="adminPasswordInput" class="form-control" 
+               placeholder="أدخل ID الأدمن (7600319381) أو الباسورد..." 
+               style="text-align:center;font-size:15px;letter-spacing:1px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600" 
+               autofocus autocomplete="current-password">
+        <button type="button" onclick="togglePassVisibility()" 
+                style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px" 
+                id="togglePassBtn" title="إظهار / إخفاء">👁️</button>
       </div>
-      <div class="pin-error" id="pinError"></div>
-      <button type="submit" class="btn btn-primary btn-lg" style="width:100%">🔓 دخول</button>
+      <div class="pin-error" id="pinError" style="margin-bottom:14px;font-size:13px;font-weight:600;min-height:20px;color:var(--accent-red);line-height:1.4"></div>
+      <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700">🔓 تسجيل الدخول</button>
     </form>
 
     <div style="margin-top:20px">
-      <a href="mission-view.html" class="btn btn-ghost btn-sm" style="width:100%; justify-content: center;">👁️ صفحة العرض فقط</a>
+      <a href="mission-view.html" class="btn btn-ghost btn-sm" style="width:100%; justify-content: center;">👁️ الانتقال لصفحة العرض</a>
     </div>
   </div>
 </div>
@@ -321,24 +324,24 @@
     </div>
 
     <div class="form-section">
-      <div class="form-section-title">🔐 تغيير رمز PIN</div>
+      <div class="form-section-title">🔐 تغيير كلمة المرور / رمز الأدمن</div>
       <div class="form-row single">
         <div class="form-group">
-          <label>الرمز الحالي</label>
-          <input type="password" class="form-control" id="currentPin" placeholder="••••" maxlength="6">
+          <label>كلمة المرور أو الـ ID الحالي</label>
+          <input type="password" class="form-control" id="currentPin" placeholder="أدخل الرمز الحالي...">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>الرمز الجديد</label>
-          <input type="password" class="form-control" id="newPin" placeholder="••••" maxlength="6">
+          <label>كلمة المرور الجديدة</label>
+          <input type="password" class="form-control" id="newPin" placeholder="الرمز الجديد...">
         </div>
         <div class="form-group">
-          <label>تأكيد الرمز</label>
-          <input type="password" class="form-control" id="confirmPin" placeholder="••••" maxlength="6">
+          <label>تأكيد كلمة المرور الجديدة</label>
+          <input type="password" class="form-control" id="confirmPin" placeholder="تأكيد الرمز الجديد...">
         </div>
       </div>
-      <button class="btn btn-amber" onclick="changePin()" style="width:100%">🔐 تحديث رمز PIN</button>
+      <button class="btn btn-amber" onclick="changePin()" style="width:100%">🔐 تحديث كلمة المرور</button>
     </div>
 
     <div class="form-section">
@@ -374,51 +377,64 @@
 // ────────────────────────────────────────────────
 let sessionActive = false;
 
-function pinNext(el, next) {
-  if (el.value.length === 1 && next < 4) {
-    document.getElementById('pin' + next).focus();
+function togglePassVisibility() {
+  const inp = document.getElementById('adminPasswordInput');
+  const btn = document.getElementById('togglePassBtn');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁️';
   }
 }
 
-function pinBack(e, prev) {
-  if (e.key === 'Backspace' && e.target.value === '') {
-    document.getElementById('pin' + prev).focus();
-  }
+function handleLoginSubmit(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('adminPasswordInput');
+  const val = input ? input.value.trim() : '';
+  doLogin(val);
 }
 
-function checkAutoPin() {
-  const pin = [0,1,2,3].map(i => document.getElementById('pin'+i).value).join('');
-  if (pin.length === 4) setTimeout(() => doLogin(pin), 100);
-}
-
-function checkPin(e) {
-  e.preventDefault();
-  const pin = [0,1,2,3].map(i => document.getElementById('pin'+i).value).join('');
-  doLogin(pin);
-}
-
-function doLogin(pin) {
+function doLogin(entered) {
+  const errEl = document.getElementById('pinError');
   const adminPin = getAdminPin();
-  if (pin === adminPin) {
+  
+  if (!entered) {
+    errEl.textContent = '⚠️ يرجى إدخال الـ ID أو كلمة المرور للمتابعة.';
+    return;
+  }
+
+  // Accepts custom changed password or the default Super Admin ID 7600319381
+  if (entered === adminPin || entered === '7600319381') {
     sessionActive = true;
+    sessionStorage.setItem('mm_admin_logged', 'true');
+    errEl.textContent = '';
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('adminContent').style.display = 'block';
     setLinks();
     renderAdmin();
   } else {
-    document.getElementById('pinError').textContent = '❌ رمز PIN غير صحيح';
-    [0,1,2,3].forEach(i => { const el = document.getElementById('pin'+i); el.value = ''; });
-    document.getElementById('pin0').focus();
-    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 2500);
+    // Shows user is not registered / wrong password
+    errEl.textContent = '❌ عذراً، أنت غير مسجل كمسؤول أو كلمة المرور غير صحيحة.';
+    const input = document.getElementById('adminPasswordInput');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
   }
 }
 
 function logout() {
   sessionActive = false;
+  sessionStorage.removeItem('mm_admin_logged');
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('adminContent').style.display = 'none';
-  [0,1,2,3].forEach(i => { document.getElementById('pin'+i).value = ''; });
-  document.getElementById('pin0').focus();
+  const input = document.getElementById('adminPasswordInput');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
 }
 
 // ────────────────────────────────────────────────
@@ -697,14 +713,25 @@ function closeSettings() {
 }
 
 function changePin() {
-  const cur = document.getElementById('currentPin').value;
-  const nw  = document.getElementById('newPin').value;
-  const cf  = document.getElementById('confirmPin').value;
-  if (cur !== getAdminPin()) { showToast('الرمز الحالي غير صحيح', 'error'); return; }
-  if (!nw || nw.length < 4) { showToast('الرمز الجديد يجب أن يكون 4 أرقام على الأقل', 'error'); return; }
-  if (nw !== cf) { showToast('الرمز الجديد وتأكيده غير متطابقين', 'error'); return; }
+  const cur = document.getElementById('currentPin').value.trim();
+  const nw  = document.getElementById('newPin').value.trim();
+  const cf  = document.getElementById('confirmPin').value.trim();
+  const currentSaved = getAdminPin();
+  
+  if (cur !== currentSaved && cur !== '7600319381') {
+    showToast('كلمة المرور الحالية غير صحيحة', 'error');
+    return;
+  }
+  if (!nw || nw.length < 4) {
+    showToast('كلمة المرور الجديدة يجب أن تكون 4 خانات على الأقل', 'error');
+    return;
+  }
+  if (nw !== cf) {
+    showToast('كلمة المرور الجديدة وتأكيدها غير متطابقين', 'error');
+    return;
+  }
   setAdminPin(nw);
-  showToast('تم تغيير رمز PIN بنجاح', 'success');
+  showToast('✅ تم تغيير كلمة المرور بنجاح!', 'success');
   document.getElementById('currentPin').value = '';
   document.getElementById('newPin').value = '';
   document.getElementById('confirmPin').value = '';
@@ -728,6 +755,15 @@ document.addEventListener('click', (e) => {
 
 // Init
 seedDemo();
+
+// Check existing session
+if (sessionStorage.getItem('mm_admin_logged') === 'true') {
+  sessionActive = true;
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminContent').style.display = 'block';
+  setLinks();
+  renderAdmin();
+}
 </script>
 </body>
 </html>
