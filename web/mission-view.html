@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MICROSCOPE MISSION — عرض المهام</title>
+  <meta name="description" content="صفحة عرض مهام MICROSCOPE MISSION — تابع حالة تنفيذ المهام الموكلة للجان">
+  <link rel="stylesheet" href="mission.css">
+  <style>
+    .priority-high { color: var(--accent-red); font-size: 12px; font-weight: 700; }
+    .priority-normal { color: var(--text-muted); font-size: 12px; }
+    .no-tasks-active { 
+      background: rgba(245,158,11,0.08); 
+      border: 1px solid rgba(245,158,11,0.2); 
+      border-radius: var(--radius-md); 
+      padding: 12px 18px; 
+      color: var(--accent-amber); 
+      font-size: 13px; 
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .live-indicator {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--accent-green);
+    }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulseDot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulseDot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <div class="brand">
+        <div class="brand-icon">🔬</div>
+        <div class="brand-text">
+          <h1>MICROSCOPE MISSION</h1>
+          <span>Mission Control Center</span>
+        </div>
+      </div>
+      <div class="navbar-actions">
+        <div class="live-indicator">
+          <div class="live-dot"></div>
+          <span>مباشر</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshView()">🔄 تحديث</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+  <div class="container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <h2>Mission Board</h2>
+      <p>متابعة حالة المهام الموكلة للجان — يتجدد تلقائياً</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card cyan"><div class="stat-number" id="statTotal">0</div><div class="stat-label">إجمالي المهام</div></div>
+      <div class="stat-card amber"><div class="stat-number" id="statActive">0</div><div class="stat-label">قيد التنفيذ</div></div>
+      <div class="stat-card green"><div class="stat-number" id="statDone">0</div><div class="stat-label">مكتملة</div></div>
+      <div class="stat-card red"><div class="stat-number" id="statInactive">0</div><div class="stat-label">غير مفعّلة</div></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="ابحث في المهام..." oninput="filterTasks()">
+      </div>
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">الكل</button>
+      <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">مفعّلة</button>
+      <button class="filter-btn" data-filter="received" onclick="setFilter('received', this)">📥 استُلمت</button>
+      <button class="filter-btn" data-filter="progress" onclick="setFilter('progress', this)">⚡ جاري</button>
+      <button class="filter-btn" data-filter="done" onclick="setFilter('done', this)">✅ مكتملة</button>
+    </div>
+
+    <!-- TASKS GRID -->
+    <div class="tasks-grid" id="tasksGrid"></div>
+
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="mission-data.js"></script>
+<script>
+  let currentFilter = 'all';
+  let searchQuery = '';
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderTasks();
+  }
+
+  function filterTasks() {
+    searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    renderTasks();
+  }
+
+  function refreshView() {
+    renderTasks();
+    showToast('تم تحديث البيانات', 'success');
+  }
+
+  function computeStats(tasks) {
+    document.getElementById('statTotal').textContent = tasks.length;
+    document.getElementById('statActive').textContent = tasks.filter(t => t.isActive && t.status !== 'done').length;
+    document.getElementById('statDone').textContent = tasks.filter(t => t.status === 'done').length;
+    document.getElementById('statInactive').textContent = tasks.filter(t => !t.isActive).length;
+  }
+
+  function renderTasks() {
+    let tasks = loadTasks();
+    computeStats(tasks);
+
+    // Filter
+    if (currentFilter === 'active')   tasks = tasks.filter(t => t.isActive);
+    if (currentFilter === 'received') tasks = tasks.filter(t => t.status === 'received');
+    if (currentFilter === 'progress') tasks = tasks.filter(t => t.status === 'progress');
+    if (currentFilter === 'done')     tasks = tasks.filter(t => t.status === 'done');
+
+    // Search
+    if (searchQuery) {
+      tasks = tasks.filter(t =>
+        t.title.toLowerCase().includes(searchQuery) ||
+        t.description.toLowerCase().includes(searchQuery) ||
+        (t.headName || '').toLowerCase().includes(searchQuery) ||
+        (t.committees || []).some(c => c.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    const grid = document.getElementById('tasksGrid');
+
+    if (tasks.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3>لا توجد مهام</h3>
+          <p>لم يتم العثور على مهام تطابق معايير البحث</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = tasks.map((task, i) => {
+      const s = STATUSES[task.status] || STATUSES.inactive;
+      const committees = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
+      const priorityHtml = task.priority === 'high'
+        ? `<span class="priority-high">🔴 أولوية عالية</span>`
+        : `<span class="priority-normal">🔵 عادية</span>`;
+
+      return `
+        <div class="task-card status-${task.status}" id="card-${task.id}">
+          <div class="task-number">${i + 1}</div>
+          <div class="task-header">
+            <div class="task-meta">
+              <div class="task-title">${task.title}</div>
+              <div class="task-badges">
+                ${committees}
+                ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
+                ${priorityHtml}
+              </div>
+            </div>
+            <div>${renderBadgeStatus(task.status)}</div>
+          </div>
+
+          <div class="task-body">${task.description}</div>
+
+          ${task.isActive ? `
+          <div class="task-timeline">
+            ${renderTimeline(task)}
+          </div>` : `
+          <div class="no-tasks-active">
+            ⏸️ هذه المهمة غير مفعّلة بعد
+          </div>`}
+
+          <div class="task-footer">
+            <div class="task-date">📅 ${formatDate(task.createdAt)}</div>
+            ${task.updatedAt !== task.createdAt ? `<div class="task-date">🔄 ${formatDate(task.updatedAt)}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Auto-refresh every 30 seconds
+  seedDemo();
+  renderTasks();
+  setInterval(renderTasks, 30000);
+</script>
+</body>
+</html>

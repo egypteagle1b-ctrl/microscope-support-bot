@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MICROSCOPE MISSION — لوحة الإدارة</title>
+  <meta name="description" content="لوحة إدارة مهام MICROSCOPE MISSION — إضافة وتعديل ومتابعة المهام">
+  <link rel="stylesheet" href="mission.css">
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-heavy), 0 0 60px rgba(0,212,255,0.1);
+      text-align: center;
+    }
+    .login-icon { font-size: 56px; margin-bottom: 16px; }
+    .login-title { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; margin-bottom: 6px; }
+    .login-sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; }
+    .login-pin {
+      display: flex; justify-content: center; gap: 12px; margin-bottom: 28px;
+    }
+    .pin-digit {
+      width: 54px; height: 64px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      text-align: center;
+      font-size: 28px; font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'Rajdhani', sans-serif;
+      outline: none;
+      transition: all 0.3s ease;
+      caret-color: var(--accent-cyan);
+    }
+    .pin-digit:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
+    .pin-error { color: var(--accent-red); font-size: 13px; margin-bottom: 12px; min-height: 20px; }
+
+    /* ADMIN CONTENT */
+    #adminContent { display: none; }
+
+    .admin-toolbar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .admin-toolbar h3 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    /* STATUS CHANGE BUTTONS */
+    .status-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .task-admin-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-admin-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+    .task-admin-card.status-inactive::before { background: var(--text-muted); }
+    .task-admin-card.status-received::before { background: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,212,255,0.5); }
+    .task-admin-card.status-progress::before { background: var(--accent-amber); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+    .task-admin-card.status-done::before    { background: var(--accent-green); box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+
+    .task-admin-card:hover { border-color: rgba(0,212,255,0.2); box-shadow: var(--shadow-card); }
+
+    .admin-task-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .admin-task-title { font-size: 18px; font-weight: 700; color: var(--text-primary); flex: 1; }
+    .admin-task-meta { color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; line-height: 1.6; }
+    .admin-task-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+    .admin-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
+    .admin-date { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+
+    /* PRIORITY SELECT */
+    .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 6px; }
+    .priority-dot.high { background: var(--accent-red); }
+    .priority-dot.normal { background: var(--text-muted); }
+
+    /* LINKS PANEL */
+    .links-panel {
+      background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,180,160,0.04));
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-bottom: 28px;
+    }
+
+    .links-panel h3 { color: var(--accent-cyan); font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+    .link-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 10px;
+    }
+
+    .link-row .link-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); min-width: 120px; }
+    .link-row .link-url { flex: 1; font-size: 13px; color: var(--accent-cyan); word-break: break-all; }
+    .link-copy { background: none; border: 1px solid rgba(0,212,255,0.3); color: var(--accent-cyan); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Cairo',sans-serif; transition: all 0.2s; white-space: nowrap; }
+    .link-copy:hover { background: rgba(0,212,255,0.1); }
+
+    /* SETTINGS */
+    .settings-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    /* MODAL FORM SPECIFIC */
+    .form-label-big { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div class="login-icon">🔬</div>
+    <div class="login-title">ADMIN PANEL</div>
+    <div class="login-sub">أدخل رمز PIN للوصول إلى لوحة الإدارة</div>
+
+    <form id="loginForm" onsubmit="checkPin(event)">
+      <div class="login-pin" id="pinInputs">
+        <input type="password" class="pin-digit" maxlength="1" id="pin0" oninput="pinNext(this, 1)" inputmode="numeric" autofocus>
+        <input type="password" class="pin-digit" maxlength="1" id="pin1" oninput="pinNext(this, 2)" onkeydown="pinBack(event, 0)" inputmode="numeric">
+        <input type="password" class="pin-digit" maxlength="1" id="pin2" oninput="pinNext(this, 3)" onkeydown="pinBack(event, 1)" inputmode="numeric">
+        <input type="password" class="pin-digit" maxlength="1" id="pin3" oninput="checkAutoPin()" onkeydown="pinBack(event, 2)" inputmode="numeric">
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%">🔓 دخول</button>
+    </form>
+
+    <div style="margin-top:20px">
+      <a href="mission-view.html" class="btn btn-ghost btn-sm" style="width:100%; justify-content: center;">👁️ صفحة العرض فقط</a>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN CONTENT (hidden until logged in) -->
+<div id="adminContent">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-inner">
+        <div class="brand">
+          <div class="brand-icon">🔬</div>
+          <div class="brand-text">
+            <h1>MICROSCOPE MISSION</h1>
+            <span>Admin Panel</span>
+          </div>
+        </div>
+        <div class="navbar-actions">
+          <span class="admin-badge">ADMIN</span>
+          <a href="mission-view.html" class="btn btn-primary btn-sm">👁️ صفحة العرض</a>
+          <button class="btn btn-ghost btn-sm" onclick="logout()">🚪 خروج</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+
+      <div class="page-header">
+        <h2>Admin Control</h2>
+        <p>إدارة المهام — إضافة وتعديل وتتبع حالة التنفيذ</p>
+      </div>
+
+      <!-- LINKS PANEL -->
+      <div class="links-panel">
+        <h3>🔗 روابط الموقع</h3>
+        <div class="link-row">
+          <span class="link-label">📖 رابط العرض</span>
+          <span class="link-url" id="viewLink">—</span>
+          <button class="link-copy" onclick="copyLink('viewLink')">📋 نسخ</button>
+          <a id="viewLinkBtn" href="#" target="_blank" class="link-copy">🔗 فتح</a>
+        </div>
+        <div class="link-row">
+          <span class="link-label">⚙️ رابط الإدارة</span>
+          <span class="link-url" id="adminLink">—</span>
+          <button class="link-copy" onclick="copyLink('adminLink')">📋 نسخ</button>
+          <a id="adminLinkBtn" href="#" target="_blank" class="link-copy">🔗 فتح</a>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-bar">
+        <div class="stat-card cyan"><div class="stat-number" id="statTotal">0</div><div class="stat-label">إجمالي المهام</div></div>
+        <div class="stat-card amber"><div class="stat-number" id="statActive">0</div><div class="stat-label">مفعّلة</div></div>
+        <div class="stat-card green"><div class="stat-number" id="statDone">0</div><div class="stat-label">مكتملة</div></div>
+        <div class="stat-card red"><div class="stat-number" id="statInactive">0</div><div class="stat-label">غير مفعّلة</div></div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="admin-toolbar">
+        <h3>📋 المهام</h3>
+        <div class="search-input-wrap" style="max-width:280px">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="adminSearch" placeholder="بحث..." oninput="adminFilter()">
+        </div>
+        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:160px; padding:9px 12px">
+          <option value="all">كل الحالات</option>
+          <option value="inactive">غير مفعّلة</option>
+          <option value="received">استُلمت</option>
+          <option value="progress">جاري</option>
+          <option value="done">مكتملة</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة مهمة</button>
+        <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙️ إعدادات</button>
+      </div>
+
+      <!-- TASKS GRID -->
+      <div class="tasks-grid" id="adminGrid"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">➕ إضافة مهمة</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <form id="taskForm" onsubmit="saveTask(event)">
+      <input type="hidden" id="editingId">
+
+      <div class="form-section" style="margin-bottom:20px">
+        <div class="form-section-title">📋 تفاصيل المهمة</div>
+
+        <div class="form-row single">
+          <div class="form-group">
+            <label><span class="required">*</span> عنوان المهمة</label>
+            <input type="text" class="form-control" id="fTitle" placeholder="أدخل عنوان المهمة..." required>
+          </div>
+        </div>
+
+        <div class="form-row single">
+          <div class="form-group">
+            <label><span class="required">*</span> محتوى المهمة</label>
+            <textarea class="form-control" id="fDesc" rows="4" placeholder="اكتب تفاصيل المهمة هنا..." required></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><span class="required">*</span> اللجان المعنية</label>
+            <div class="tags-input-wrapper" id="committeesWrapper" onclick="document.getElementById('committeeInput').focus()">
+              <input type="text" class="tags-input" id="committeeInput" placeholder="اكتب اسم اللجنة واضغط Enter..." onkeydown="addCommittee(event)">
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)">اضغط Enter أو فاصلة لإضافة لجنة</span>
+          </div>
+          <div class="form-group">
+            <label><span class="required">*</span> رئيس اللجنة</label>
+            <input type="text" class="form-control" id="fHead" placeholder="اسم رئيس اللجنة...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>الأولوية</label>
+            <select class="form-control" id="fPriority">
+              <option value="normal">🔵 عادية</option>
+              <option value="high">🔴 عالية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الحالة الابتدائية</label>
+            <select class="form-control" id="fActive">
+              <option value="0">⏸️ غير مفعّلة</option>
+              <option value="1">▶️ تفعيل فوري</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary">💾 حفظ المهمة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ الإعدادات</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🔐 تغيير رمز PIN</div>
+      <div class="form-row single">
+        <div class="form-group">
+          <label>الرمز الحالي</label>
+          <input type="password" class="form-control" id="currentPin" placeholder="••••" maxlength="6">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>الرمز الجديد</label>
+          <input type="password" class="form-control" id="newPin" placeholder="••••" maxlength="6">
+        </div>
+        <div class="form-group">
+          <label>تأكيد الرمز</label>
+          <input type="password" class="form-control" id="confirmPin" placeholder="••••" maxlength="6">
+        </div>
+      </div>
+      <button class="btn btn-amber" onclick="changePin()" style="width:100%">🔐 تحديث رمز PIN</button>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🗑️ إدارة البيانات</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">حذف جميع المهام المكتملة من القائمة</p>
+      <button class="btn btn-danger btn-sm" onclick="clearDone()">🗑️ حذف المكتملة</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box" style="max-width:420px">
+    <div style="text-align:center; padding: 12px 0">
+      <div style="font-size:52px;margin-bottom:16px">⚠️</div>
+      <h3 style="font-size:22px;margin-bottom:10px;color:var(--text-primary)">حذف المهمة؟</h3>
+      <p style="color:var(--text-secondary);margin-bottom:28px;font-size:14px">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المهمة نهائياً.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">إلغاء</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">🗑️ نعم، احذف</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="mission-data.js"></script>
+<script>
+// ────────────────────────────────────────────────
+// LOGIN
+// ────────────────────────────────────────────────
+let sessionActive = false;
+
+function pinNext(el, next) {
+  if (el.value.length === 1 && next < 4) {
+    document.getElementById('pin' + next).focus();
+  }
+}
+
+function pinBack(e, prev) {
+  if (e.key === 'Backspace' && e.target.value === '') {
+    document.getElementById('pin' + prev).focus();
+  }
+}
+
+function checkAutoPin() {
+  const pin = [0,1,2,3].map(i => document.getElementById('pin'+i).value).join('');
+  if (pin.length === 4) setTimeout(() => doLogin(pin), 100);
+}
+
+function checkPin(e) {
+  e.preventDefault();
+  const pin = [0,1,2,3].map(i => document.getElementById('pin'+i).value).join('');
+  doLogin(pin);
+}
+
+function doLogin(pin) {
+  const adminPin = getAdminPin();
+  if (pin === adminPin) {
+    sessionActive = true;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    setLinks();
+    renderAdmin();
+  } else {
+    document.getElementById('pinError').textContent = '❌ رمز PIN غير صحيح';
+    [0,1,2,3].forEach(i => { const el = document.getElementById('pin'+i); el.value = ''; });
+    document.getElementById('pin0').focus();
+    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 2500);
+  }
+}
+
+function logout() {
+  sessionActive = false;
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('adminContent').style.display = 'none';
+  [0,1,2,3].forEach(i => { document.getElementById('pin'+i).value = ''; });
+  document.getElementById('pin0').focus();
+}
+
+// ────────────────────────────────────────────────
+// LINKS
+// ────────────────────────────────────────────────
+function setLinks() {
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const vLink = base + 'mission-view.html';
+  const aLink = base + 'mission-admin.html';
+
+  document.getElementById('viewLink').textContent = vLink;
+  document.getElementById('viewLinkBtn').href = vLink;
+  document.getElementById('adminLink').textContent = aLink;
+  document.getElementById('adminLinkBtn').href = aLink;
+}
+
+function copyLink(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('تم نسخ الرابط!', 'success'));
+}
+
+// ────────────────────────────────────────────────
+// TAGS / COMMITTEES
+// ────────────────────────────────────────────────
+let committees = [];
+
+function addCommittee(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val && !committees.includes(val)) {
+      committees.push(val);
+      renderTags();
+    }
+    e.target.value = '';
+  }
+}
+
+function removeCommittee(name) {
+  committees = committees.filter(c => c !== name);
+  renderTags();
+}
+
+function renderTags() {
+  const wrapper = document.getElementById('committeesWrapper');
+  const input = document.getElementById('committeeInput');
+  wrapper.querySelectorAll('.tag-item').forEach(t => t.remove());
+  committees.forEach(c => {
+    const tag = document.createElement('div');
+    tag.className = 'tag-item';
+    tag.innerHTML = `${c}<button class="tag-remove" type="button" onclick="removeCommittee('${c.replace(/'/g,"\\'")}')">✕</button>`;
+    wrapper.insertBefore(tag, input);
+  });
+}
+
+// ────────────────────────────────────────────────
+// MODAL - ADD / EDIT
+// ────────────────────────────────────────────────
+function openAddModal() {
+  committees = [];
+  renderTags();
+  document.getElementById('taskForm').reset();
+  document.getElementById('editingId').value = '';
+  document.getElementById('modalTitle').textContent = '➕ إضافة مهمة جديدة';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const task = getTask(id);
+  if (!task) return;
+
+  committees = [...(task.committees || [])];
+  renderTags();
+  document.getElementById('editingId').value = id;
+  document.getElementById('fTitle').value = task.title;
+  document.getElementById('fDesc').value = task.description;
+  document.getElementById('fHead').value = task.headName || '';
+  document.getElementById('fPriority').value = task.priority || 'normal';
+  document.getElementById('fActive').value = task.isActive ? '1' : '0';
+  document.getElementById('modalTitle').textContent = '✏️ تعديل المهمة';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('taskModal').classList.remove('open');
+}
+
+function saveTask(e) {
+  e.preventDefault();
+  if (committees.length === 0) {
+    showToast('أضف لجنة واحدة على الأقل', 'error');
+    return;
+  }
+
+  const data = {
+    title: document.getElementById('fTitle').value.trim(),
+    description: document.getElementById('fDesc').value.trim(),
+    committees,
+    headName: document.getElementById('fHead').value.trim(),
+    priority: document.getElementById('fPriority').value,
+  };
+
+  const id = document.getElementById('editingId').value;
+  const shouldActivate = document.getElementById('fActive').value === '1';
+
+  if (id) {
+    updateTask(id, data);
+    if (shouldActivate && !getTask(id).isActive) toggleActive(id, true);
+    showToast('تم تحديث المهمة بنجاح', 'success');
+  } else {
+    const task = createTask(data);
+    if (shouldActivate) toggleActive(task.id, true);
+    showToast('تمت إضافة المهمة بنجاح', 'success');
+  }
+
+  closeModal();
+  renderAdmin();
+}
+
+// ────────────────────────────────────────────────
+// DELETE
+// ────────────────────────────────────────────────
+let pendingDeleteId = null;
+
+function openDeleteModal(id) {
+  pendingDeleteId = id;
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').classList.remove('open');
+}
+
+function confirmDelete() {
+  if (pendingDeleteId) {
+    deleteTask(pendingDeleteId);
+    showToast('تم حذف المهمة', 'info');
+    renderAdmin();
+    closeDeleteModal();
+  }
+}
+
+// ────────────────────────────────────────────────
+// STATUS MANAGEMENT
+// ────────────────────────────────────────────────
+function toggleTaskActive(id, val) {
+  toggleActive(id, val);
+  renderAdmin();
+  showToast(val ? '✅ تم تفعيل المهمة' : '⏸️ تم إيقاف المهمة', val ? 'success' : 'info');
+}
+
+function advanceTaskStatus(id) {
+  const task = getTask(id);
+  if (!task) return;
+  if (!task.isActive) { showToast('فعّل المهمة أولاً', 'error'); return; }
+  if (task.status === 'done') { showToast('المهمة مكتملة بالفعل', 'info'); return; }
+  const order = ['inactive','received','progress','done'];
+  const nextIdx = order.indexOf(task.status) + 1;
+  if (nextIdx >= order.length) return;
+  advanceStatus(id);
+  renderAdmin();
+  const s = STATUSES[order[nextIdx]];
+  showToast(`تم تحديث الحالة: ${s.label}`, 'success');
+}
+
+// ────────────────────────────────────────────────
+// RENDER
+// ────────────────────────────────────────────────
+let adminSearchQuery = '';
+let adminStatusFilter = 'all';
+
+function adminFilter() {
+  adminSearchQuery = document.getElementById('adminSearch').value.toLowerCase();
+  adminStatusFilter = document.getElementById('statusFilter').value;
+  renderAdmin();
+}
+
+function renderAdmin() {
+  let tasks = loadTasks();
+
+  // Compute stats
+  document.getElementById('statTotal').textContent = tasks.length;
+  document.getElementById('statActive').textContent = tasks.filter(t => t.isActive && t.status !== 'done').length;
+  document.getElementById('statDone').textContent = tasks.filter(t => t.status === 'done').length;
+  document.getElementById('statInactive').textContent = tasks.filter(t => !t.isActive).length;
+
+  // Filter
+  if (adminStatusFilter !== 'all') tasks = tasks.filter(t => t.status === adminStatusFilter);
+  if (adminSearchQuery) tasks = tasks.filter(t =>
+    t.title.toLowerCase().includes(adminSearchQuery) ||
+    t.description.toLowerCase().includes(adminSearchQuery) ||
+    (t.headName||'').toLowerCase().includes(adminSearchQuery) ||
+    (t.committees||[]).some(c => c.toLowerCase().includes(adminSearchQuery))
+  );
+
+  const grid = document.getElementById('adminGrid');
+
+  if (tasks.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>لا توجد مهام</h3><p>ابدأ بإضافة مهمة جديدة</p></div>`;
+    return;
+  }
+
+  const order = ['inactive','received','progress','done'];
+
+  grid.innerHTML = tasks.map((task, i) => {
+    const s = STATUSES[task.status] || STATUSES.inactive;
+    const committees = (task.committees||[]).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
+    const curIdx = order.indexOf(task.status);
+    const canAdvance = task.isActive && curIdx < order.length - 1;
+
+    // Next status button
+    const nextStatus = canAdvance ? STATUSES[order[curIdx + 1]] : null;
+    const nextBtn = nextStatus
+      ? `<button class="btn btn-sm ${nextStatus.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">
+           ${nextStatus.icon} ${nextStatus.label}
+         </button>`
+      : '';
+
+    return `
+      <div class="task-admin-card status-${task.status}" id="acard-${task.id}">
+        <div class="task-number">${i + 1}</div>
+        <div class="admin-task-header">
+          <div class="admin-task-title">${task.title}</div>
+          <div>${renderBadgeStatus(task.status)}</div>
+        </div>
+        <div class="admin-task-badges">
+          ${committees}
+          ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
+          ${task.priority === 'high' ? `<span class="badge" style="background:rgba(239,68,68,0.15);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3)">🔴 أولوية عالية</span>` : ''}
+        </div>
+        <div class="admin-task-meta">${task.description}</div>
+
+        ${task.isActive ? `
+        <div class="task-timeline" style="margin:12px 0">
+          ${renderTimeline(task)}
+        </div>` : ''}
+
+        <div class="admin-actions">
+          <!-- Toggle ON/OFF -->
+          <label class="toggle-wrap">
+            <span class="toggle-label">${task.isActive ? '🟢 مفعّلة' : '⏸️ موقوفة'}</span>
+            <label class="toggle-switch">
+              <input type="checkbox" ${task.isActive ? 'checked' : ''} onchange="toggleTaskActive('${task.id}', this.checked)">
+              <div class="toggle-track"></div>
+            </label>
+          </label>
+
+          ${nextBtn}
+
+          <div style="margin-right: auto; display:flex; gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal('${task.id}')">✏️ تعديل</button>
+            <button class="btn btn-danger btn-sm" onclick="openDeleteModal('${task.id}')">🗑️</button>
+          </div>
+        </div>
+
+        <div style="padding-top:10px;font-size:11px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap">
+          <span>📅 أُنشئت: ${formatDate(task.createdAt)}</span>
+          ${task.timeline.received ? `<span>📥 استُلمت: ${formatDate(task.timeline.received)}</span>` : ''}
+          ${task.timeline.progress ? `<span>⚡ بدأت: ${formatDate(task.timeline.progress)}</span>` : ''}
+          ${task.timeline.done     ? `<span>✅ اكتملت: ${formatDate(task.timeline.done)}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ────────────────────────────────────────────────
+// SETTINGS
+// ────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function changePin() {
+  const cur = document.getElementById('currentPin').value;
+  const nw  = document.getElementById('newPin').value;
+  const cf  = document.getElementById('confirmPin').value;
+  if (cur !== getAdminPin()) { showToast('الرمز الحالي غير صحيح', 'error'); return; }
+  if (!nw || nw.length < 4) { showToast('الرمز الجديد يجب أن يكون 4 أرقام على الأقل', 'error'); return; }
+  if (nw !== cf) { showToast('الرمز الجديد وتأكيده غير متطابقين', 'error'); return; }
+  setAdminPin(nw);
+  showToast('تم تغيير رمز PIN بنجاح', 'success');
+  document.getElementById('currentPin').value = '';
+  document.getElementById('newPin').value = '';
+  document.getElementById('confirmPin').value = '';
+  closeSettings();
+}
+
+function clearDone() {
+  const tasks = loadTasks().filter(t => t.status !== 'done');
+  saveTasks(tasks);
+  showToast('تم حذف المهام المكتملة', 'info');
+  renderAdmin();
+  closeSettings();
+}
+
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('open');
+  }
+});
+
+// Init
+seedDemo();
+</script>
+</body>
+</html>
