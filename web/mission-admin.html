@@ -248,8 +248,13 @@
         </div>
         <div class="navbar-actions">
           <span class="badge" style="background:linear-gradient(135deg,var(--accent-amber),#ea580c);color:#040914;font-weight:900">ADMIN CONTROL</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="switchViewMode('live')" style="border:1px solid rgba(16,185,129,0.35);color:#10b981;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span class="live-dot" style="width:7px;height:7px;"></span>
+            المهام الشغالة (<span id="navLiveCount">0</span>)
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openLivePreviewModal()">📱 معاينة الشاشة الحية</button>
           <button class="btn btn-ghost btn-sm" onclick="exportTasksReport()">📄 تقرير المهام</button>
-          <a href="mission-view.html" class="btn btn-primary btn-sm">👁️ صفحة العرض المباشر</a>
+          <a href="mission-view.html" target="_blank" class="btn btn-primary btn-sm">👁️ صفحة العرض المباشر</a>
           <button type="button" class="btn btn-danger btn-sm" onclick="lockAdminSession()" title="قفل لوحة الإدارة" style="padding:4px 10px;font-size:12px;">🔒 قفل اللوحة</button>
         </div>
       </div>
@@ -282,22 +287,31 @@
 
       <div class="stats-bar">
         <div class="stat-card cyan"><div class="stat-number" id="statTotal">0</div><div class="stat-label">إجمالي المهام</div></div>
-        <div class="stat-card amber"><div class="stat-number" id="statActive">0</div><div class="stat-label">قيد التنفيذ</div></div>
+        <div class="stat-card amber" onclick="switchViewMode('live')" style="cursor:pointer;" title="اضغط لعرض المهام الشغالة حالياً في شاشة المهام">
+          <div class="stat-number" id="statActive">0</div>
+          <div class="stat-label">⚡ قيد التنفيذ (شغالة حالياً 👆)</div>
+        </div>
         <div class="stat-card green"><div class="stat-number" id="statDone">0</div><div class="stat-label">مكتملة</div></div>
         <div class="stat-card red"><div class="stat-number" id="statInactive">0</div><div class="stat-label">غير مفعّلة</div></div>
       </div>
 
       <div class="admin-toolbar">
-        <h3>📋 قائمة المهام</h3>
+        <h3>📋 إدارة المهام</h3>
         <div class="view-switcher">
-          <button class="v-btn active" id="btnViewList" onclick="switchViewMode('list')">📑 قائمة</button>
+          <button class="v-btn active" id="btnViewList" onclick="switchViewMode('list')">📑 كل المهام</button>
           <button class="v-btn" id="btnViewKanban" onclick="switchViewMode('kanban')">📊 كانبان Board</button>
+          <button class="v-btn" id="btnViewLive" onclick="switchViewMode('live')" style="position:relative;">
+            <span class="live-dot" style="width:7px;height:7px;"></span>
+            <span>🔴 المهام الشغالة حالياً</span>
+            <span class="badge" id="liveModeCount" style="padding:1px 6px;font-size:10px;background:rgba(16,185,129,0.25);color:#10b981;margin-right:2px;">0</span>
+          </button>
         </div>
         <div class="search-input-wrap" style="max-width:240px;flex:1;min-width:140px">
           <input type="text" class="form-control" id="adminSearch" placeholder="🔍 بحث في المهام..." oninput="adminFilter()" style="padding:7px 12px;font-size:12px;border-radius:20px">
         </div>
-        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:140px;padding:7px 10px;font-size:12px">
+        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:165px;padding:7px 10px;font-size:12px">
           <option value="all">كل الحالات</option>
+          <option value="live_active">🔴 الشغالة حالياً فقط</option>
           <option value="inactive">غير مفعّلة</option>
           <option value="received">استُلمت</option>
           <option value="progress">جاري</option>
@@ -340,6 +354,65 @@
           </div>
           <div class="kanban-items" id="kCol-done"></div>
         </div>
+      </div>
+
+      <!-- VIEW 3: LIVE ACTIVE MISSIONS (VIEW FROM MISSION PAGE) -->
+      <div id="liveBoard" style="display:none; flex-direction:column; gap:16px; margin-bottom:50px;">
+        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(0,212,255,0.08)); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-lg); padding:18px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; border-radius:50%; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); display:flex; align-items:center; justify-content:center; font-size:22px;">
+              📡
+            </div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
+                <span>المهام الشغالة حالياً في شاشة المهام</span>
+                <span class="live-indicator"><span class="live-dot"></span> بث حي مباشر</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
+                هذه المهام هي المعروضة لحظياً لفرق العمل واللجان على الرابط المباشر العام
+              </p>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="renderAdmin()">🔄 تحديث اللحظي</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="openLivePreviewModal()" style="border-color:rgba(0,212,255,0.4);color:var(--accent-cyan);">📱 نافذة المعاينة الحية</button>
+            <a href="mission-view.html" target="_blank" class="btn btn-primary btn-sm">👁️ فتح صفحة المهام</a>
+          </div>
+        </div>
+
+        <!-- Mini Live Stats Bar -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+          <div style="background:rgba(9,20,38,0.7); border:1px solid rgba(0,212,255,0.2); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted);">إجمالي المهام الشغالة</div>
+              <div id="liveStatRunning" style="font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--accent-cyan);">0</div>
+            </div>
+            <div style="font-size:24px;">🚀</div>
+          </div>
+          <div style="background:rgba(9,20,38,0.7); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted);">قيد التنفيذ (جاري العمل)</div>
+              <div id="liveStatProgress" style="font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--accent-amber);">0</div>
+            </div>
+            <div style="font-size:24px;">⚡</div>
+          </div>
+          <div style="background:rgba(9,20,38,0.7); border:1px solid rgba(0,212,255,0.2); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted);">تم الاستلام وبانتظار البدء</div>
+              <div id="liveStatReceived" style="font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--accent-cyan);">0</div>
+            </div>
+            <div style="font-size:24px;">📥</div>
+          </div>
+          <div style="background:rgba(9,20,38,0.7); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted);">مهام عاجلة وقصوى</div>
+              <div id="liveStatHigh" style="font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--accent-red);">0</div>
+            </div>
+            <div style="font-size:24px;">🔴</div>
+          </div>
+        </div>
+
+        <div id="liveTasksList" style="display:flex; flex-direction:column; gap:16px;"></div>
       </div>
 
     </div>
@@ -471,6 +544,25 @@
   </div>
 </div>
 
+<!-- LIVE PREVIEW MODAL -->
+<div class="modal-overlay" id="livePreviewModal">
+  <div class="modal-box" style="max-width:960px; width:95%; height:88vh; display:flex; flex-direction:column; padding:20px;">
+    <div class="modal-header" style="margin-bottom:12px; padding-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="live-indicator"><span class="live-dot"></span> بث مباشر</div>
+        <div class="modal-title" style="font-size:18px;">معاينة شاشة المهام المباشرة (Live Tasks Screen)</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <a href="mission-view.html" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px; padding:4px 10px;">🔗 فتح في نافذة مستقلة</a>
+        <button class="modal-close" onclick="closeLivePreviewModal()">✕</button>
+      </div>
+    </div>
+    <div style="flex:1; border-radius:12px; overflow:hidden; border:1px solid rgba(0,212,255,0.25); background:#040914;">
+      <iframe id="livePreviewFrame" src="" style="width:100%; height:100%; border:none;" title="Live Mission Screen Preview"></iframe>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Shared Data Script -->
@@ -501,11 +593,17 @@ function copyLink(id) {
 
 // ── View Mode Switcher ──
 function switchViewMode(mode) {
-  currentViewMode = mode;
+  currentViewMode = mode; // 'list' | 'kanban' | 'live'
   document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
   document.getElementById('btnViewKanban').classList.toggle('active', mode === 'kanban');
+  const btnLive = document.getElementById('btnViewLive');
+  if (btnLive) btnLive.classList.toggle('active', mode === 'live');
+
   document.getElementById('adminGrid').style.display = mode === 'list' ? 'flex' : 'none';
   document.getElementById('kanbanBoard').style.display = mode === 'kanban' ? 'grid' : 'none';
+  const liveBoard = document.getElementById('liveBoard');
+  if (liveBoard) liveBoard.style.display = mode === 'live' ? 'flex' : 'none';
+
   renderAdmin();
 }
 
@@ -842,8 +940,19 @@ function renderAdmin() {
   document.getElementById('statDone').textContent = allTasks.filter(t => t.status === 'done').length;
   document.getElementById('statInactive').textContent = allTasks.filter(t => !t.isActive).length;
 
+  const liveTasksCount = allTasks.filter(t => t.isActive && t.status !== 'done').length;
+  const navLiveEl = document.getElementById('navLiveCount');
+  if (navLiveEl) navLiveEl.textContent = liveTasksCount;
+  const modeLiveEl = document.getElementById('liveModeCount');
+  if (modeLiveEl) modeLiveEl.textContent = liveTasksCount;
+
   let filtered = [...allTasks];
-  if (adminStatusFilter !== 'all') filtered = filtered.filter(t => t.status === adminStatusFilter);
+  if (adminStatusFilter === 'live_active') {
+    filtered = filtered.filter(t => t.isActive && t.status !== 'done');
+  } else if (adminStatusFilter !== 'all') {
+    filtered = filtered.filter(t => t.status === adminStatusFilter);
+  }
+
   if (adminSearchQuery) {
     filtered = filtered.filter(t =>
       t.title.toLowerCase().includes(adminSearchQuery) ||
@@ -943,6 +1052,142 @@ function renderAdmin() {
       </div>
     `).join('');
   });
+
+  // 3. Render Live Active Board (Live Tasks from Mission Page)
+  renderLiveTasks(allTasks);
+}
+
+// ── Render Live Tasks (Real-Time replica of mission-view page) ──
+function renderLiveTasks(allTasks) {
+  const container = document.getElementById('liveTasksList');
+  if (!container) return;
+
+  // Filter tasks that are actively displayed on the live missions board (mission-view.html)
+  let liveTasks = allTasks.filter(t => t.isActive && t.status !== 'done');
+
+  if (adminSearchQuery) {
+    liveTasks = liveTasks.filter(t =>
+      t.title.toLowerCase().includes(adminSearchQuery) ||
+      t.description.toLowerCase().includes(adminSearchQuery) ||
+      (t.headName || '').toLowerCase().includes(adminSearchQuery) ||
+      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery))
+    );
+  }
+
+  // Update live mini stats
+  const rCount = liveTasks.filter(t => t.status === 'received').length;
+  const pCount = liveTasks.filter(t => t.status === 'progress').length;
+  const hCount = liveTasks.filter(t => t.priority === 'high').length;
+
+  const elRun = document.getElementById('liveStatRunning');
+  const elProg = document.getElementById('liveStatProgress');
+  const elRecv = document.getElementById('liveStatReceived');
+  const elHigh = document.getElementById('liveStatHigh');
+  if (elRun) elRun.textContent = liveTasks.length;
+  if (elProg) elProg.textContent = pCount;
+  if (elRecv) elRecv.textContent = rCount;
+  if (elHigh) elHigh.textContent = hCount;
+
+  if (liveTasks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:46px 20px; text-align:center; background:rgba(9,20,38,0.5); border:1px dashed rgba(0,212,255,0.25); border-radius:var(--radius-lg);">
+        <div style="font-size:44px; margin-bottom:10px;">🏖️</div>
+        <h3 style="font-size:18px; color:var(--text-primary); margin-bottom:6px;">لا توجد مهام شغالة حالياً في شاشة المهام</h3>
+        <p style="color:var(--text-secondary); font-size:13px; max-width:440px; margin:0 auto 16px; line-height:1.6;">
+          جميع المهام الحالية إما تم اكتمالها أو في وضع المسودة / الإيقاف. يمكنك إنشاء مهمة جديدة وتفعيلها لتظهر فوراً في شاشة المهام.
+        </p>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">➕ إنشاء مهمة وتفعيلها فوراً</button>
+      </div>`;
+    return;
+  }
+
+  const ord = ['inactive', 'received', 'progress', 'done'];
+
+  container.innerHTML = liveTasks.map((task, i) => {
+    const curIdx = ord.indexOf(task.status);
+    const canAdv = task.isActive && curIdx < ord.length - 1;
+    const nextS = canAdv ? STATUSES[ord[curIdx + 1]] : null;
+    const nextBtn = nextS
+      ? `<button class="btn btn-sm ${nextS.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">${nextS.icon} نقل إلى: ${nextS.label}</button>`
+      : '';
+
+    const committees = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
+    const priorityHtml = task.priority === 'high'
+      ? `<span class="priority-high">🔴 أولوية عاجلة وقصوى</span>`
+      : `<span class="priority-normal">🔵 أولوية عادية</span>`;
+
+    let dueHtml = '';
+    if (task.dueDate) {
+      const today = new Date().toISOString().split('T')[0];
+      let dueBadgeStyle = 'background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3)';
+      let dueNote = '';
+      if (task.dueDate < today) {
+        dueBadgeStyle = 'background:rgba(239,68,68,0.18);color:var(--accent-red);border:1px solid rgba(239,68,68,0.4)';
+        dueNote = ' ⚠️ متأخرة عن الموعد!';
+      } else if (task.dueDate === today) {
+        dueBadgeStyle = 'background:rgba(245,158,11,0.25);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.5);font-weight:700';
+        dueNote = ' ⏰ موعد التسليم اليوم!';
+      }
+      dueHtml = `<span class="badge" style="${dueBadgeStyle}">📅 تسليم: ${task.dueDate}${dueNote}</span>`;
+    }
+
+    return `
+      <div class="live-card status-${task.status}" id="live-card-${task.id}">
+        <div class="task-number" title="ترتيب المهمة">${i + 1}</div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+          <div style="flex:1; min-width:260px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <span class="live-dot" style="width:7px; height:7px;"></span>
+              <h4 style="font-size:17px; font-weight:700; color:var(--text-primary); margin:0;">${task.title}</h4>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              ${committees}
+              ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
+              ${priorityHtml}
+              ${dueHtml}
+            </div>
+          </div>
+          <div>
+            ${renderBadgeStatus(task.status)}
+          </div>
+        </div>
+
+        <div style="color:var(--text-secondary); font-size:13px; line-height:1.7; margin:10px 0 14px; background:rgba(0,0,0,0.2); padding:10px 14px; border-radius:8px; border-right:3px solid var(--accent-cyan);">
+          ${task.description}
+        </div>
+
+        <div class="task-timeline" style="margin:12px 0 14px;">
+          ${renderTimeline(task)}
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+          ${nextBtn}
+          <button class="btn btn-ghost btn-sm" onclick="openTelegramDispatcher('${task.id}')" title="نسخ إشعار تيليجرام مهيأ للنشر">📢 إشعار تيليجرام</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${task.id}')">✏️ تعديل</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleTaskActive('${task.id}', false)" style="color:var(--accent-amber);" title="إيقاف المهمة وإخفاؤها من شاشة المهام">⏸️ إيقاف مؤقت من العرض</button>
+          
+          <div style="margin-right:auto; font-size:11px; color:var(--text-muted); display:flex; gap:12px; align-items:center;">
+            <span>📅 تاريخ التكليف: ${formatDate(task.createdAt)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openLivePreviewModal() {
+  const modal = document.getElementById('livePreviewModal');
+  const frame = document.getElementById('livePreviewFrame');
+  if (frame) {
+    frame.src = 'mission-view.html?preview=' + Date.now();
+  }
+  if (modal) modal.classList.add('open');
+}
+
+function closeLivePreviewModal() {
+  const modal = document.getElementById('livePreviewModal');
+  if (modal) modal.classList.remove('open');
 }
 
 // ── Admin Security Gate ──

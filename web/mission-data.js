@@ -224,60 +224,199 @@ function showToast(message, type = 'info') {
   }, 3500);
 }
 
-// ── Demo Seeding ──
+// ── Official Plan Tasks (Created as Inactive Drafts) ──
+const OFFICIAL_PLAN_TASKS = [
+  {
+    id: 'tsk_p1_interviews',
+    title: 'المرحلة الأولى: التقديمات والمقابلات الرسمية (Interviews)',
+    description: 'إعلان فتح باب التقديم ومتابعة الاستشارات والاستمارات (Deadline التقديم: الثلاثاء 10/20)، فرز المتقدمين وتحديد مواعيد المقابلات، وإجراء الانترفيوهات من السبت 10/17 إلى الأربعاء 10/21 واختيار المقبولين.',
+    committees: ['HR', 'PR'],
+    headName: 'مسؤول الموارد البشرية (HR Head)',
+    priority: 'high',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-10-21',
+    createdAt: '2026-10-12T09:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-12T09:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_p2_onboarding',
+    title: 'المرحلة الثانية: التسكين والترحيب بالأعضاء الجدد',
+    description: 'إضافة الأعضاء المقبولين إلى لجانهم الرسمية بعد فرز المقابلات، وإرسال رسائل الترحيب الرسمية ودمجهم ضمن قنوات الفريق (الفترة الزمنية من 10/22 إلى 10/24 - Deadline: 10/24).',
+    committees: ['HR', 'PR', 'PM'],
+    headName: 'إدارة العمليات والـ HR',
+    priority: 'high',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-10-24',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_p3_training',
+    title: 'المرحلة الثالثة: التأهيل والتدريب الداخلي (Onboarding)',
+    description: 'بدء برامج التدريب والتعليم المبدئي للأعضاء الجدد (Members) وعقد اجتماع رسمي (Meeting) لكل لجنة مع أعضائها الجدد خلال الفترة من 10/24 إلى 10/31 (Deadline: 10/31).',
+    committees: ['جميع اللجان', 'HR'],
+    headName: 'رؤساء اللجان (Heads) & HR',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-10-31',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_p4_trip',
+    title: 'المرحلة الرابعة (أ): تنظيم الرحلة الأولى للفريق',
+    description: 'التنسيق والترتيب المبكر بين الأعضاء القدامى لتنظيم الرحلة الأولى للفريق، والتنفيذ في الموعد المحدد لتجنب التعارض مع امتحانات الميدترم (Deadline: 11/5).',
+    committees: ['Logistics', 'HR'],
+    headName: 'مسؤول اللوجستيك وتنظيم الرحلات',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-11-05',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_p4_helpdesk',
+    title: 'المرحلة الرابعة (ب): فعالية الـ Help Desk والمساعدة الطلابية',
+    description: 'فترة التحضير والتجهيز من 11/15 إلى 11/19 (لمدة 5 أيام) وإعداد وتجهيز كافة الأنشطة والفعاليات، وانطلاق الفعالية رسمياً لخدمة الطلاب يوم 11/20.',
+    committees: ['IT & Tech', 'PR', 'Logistics'],
+    headName: 'فريق الـ Help Desk والتقنية',
+    priority: 'high',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-11-20',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_t2_bazaar',
+    title: 'خطة الترم الثاني: تنظيم بازار الفريق السنوي (Bazaar)',
+    description: 'إعداد وتجهيز بازار مخصص للفريق والأنشطة والمنتجات الطلابية، يشمل حجز المكان، الترويج والتسويق، والتنسيق المسبق مع الرعاة والمشاركين.',
+    committees: ['PR', 'Logistics', 'Social Media'],
+    headName: 'مسؤول العلاقات العامة واللوجستيك',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2027-02-25',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_t2_ramadan_helpdesk',
+    title: 'خطة الترم الثاني: هيلب ديسك رمضان (Ramadan Help Desk)',
+    description: 'تقديم خدمات الدعم والمساعدة والإرشاد الأكاديمي والطلابي بروح رمضانية وتخصيص نقاط الدعم وقنوات التواصل السريعة للطلاب خلال الشهر المبارك.',
+    committees: ['IT & Tech', 'PR', 'HR'],
+    headName: 'مسؤول الدعم الفني والـ PR',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2027-03-10',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_t2_ramadan_bags',
+    title: 'خطة الترم الثاني: شنط رمضان والعمل الخيري (Ramadan Bags)',
+    description: 'إعداد وتجهيز شنط رمضان والمواد الغذائية للعمل الخيري، جمع التبرعات، وتنظيم خطة التوزيع الميداني وتوصيلها للأسر الأكثر احتياجاً.',
+    committees: ['Charity', 'Logistics'],
+    headName: 'لجنة الخيرية (Charity Head)',
+    priority: 'high',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2027-03-05',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_t2_scientific',
+    title: 'خطة الترم الثاني: السيشنز والأنشطة العلمية (Scientific Research)',
+    description: 'تقديم ورش عمل وسلسلة سيشنز علمية تخصصية ومواصلة أنشطة وأبحاث الفريق، وتأهيل وتدريب الأعضاء لمشاريع ومسابقات البحث العلمي.',
+    committees: ['Scientific'],
+    headName: 'مسؤول اللجنة العلمية (Scientific Head)',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2027-03-20',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_t2_interactive',
+    title: 'خطة الترم الثاني: الفعاليات التفاعلية ونشاط الميكروفون المفتوح',
+    description: 'تنظيم فعاليات تفاعلية جانبية ونشاط الميكروفون المفتوح لتعزيز التفاعل والروح الإيجابية، مع فتح الباب لاستقبال أي تصورات وأفكار إضافية من الأعضاء.',
+    committees: ['Social Media', 'PR'],
+    headName: 'مسؤول السوشيال ميديا والتفاعل',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2027-03-28',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_gov_evaluation',
+    title: 'التطوير والتحسين المؤسسي: نظام تقييم الأداء والمتابعة الأسبوعية',
+    description: 'تطبيق نظام دوري لتقييم وتحفيز الأعضاء، توزيع الأدوار والمهام بوضوح، تفعيل قنوات التواصل الرسمية، والالتزام بالديدلاين ومتابعة دورية أسبوعية للمهام والإنتاجية بروح الفريق الواحد.',
+    committees: ['HR', 'PM'],
+    headName: 'مسؤولو الـ HR وإدارة العمليات',
+    priority: 'high',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-11-30',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  },
+  {
+    id: 'tsk_gov_brainstorming',
+    title: 'التطوير والتحسين المؤسسي: تفعيل باركود العصف الذهني واستقبال الاقتراحات (QR Code)',
+    description: 'إطلاق باركود (QR Code) تفاعلي لجمع مقترحات وأفكار الأعضاء الجدد والقدامى، عقد جلسات نقاش وأسئلة (Discussion & Q&A) لتوزيع المهام، وتعزيز التعاون بين اللجان لتجنب تضارب المهام.',
+    committees: ['IT & Tech', 'PM', 'جميع اللجان'],
+    headName: 'لجنة التقنية وإدارة المشاريع',
+    priority: 'normal',
+    isActive: false,
+    status: 'inactive',
+    dueDate: '2026-11-15',
+    createdAt: '2026-10-20T12:00:00.000Z',
+    updatedAt: '2026-10-20T12:00:00.000Z',
+    timeline: { created: '2026-10-20T12:00:00.000Z', received: null, progress: null, done: null }
+  }
+];
+
+// ── Demo Seeding & Automatic Plan Sync ──
 function seedDemo() {
-  const existing = loadTasks();
-  if (existing && existing.length > 0) return;
+  let existing = loadTasks();
 
-  const now = new Date();
-  const d1 = new Date(now.getTime() - 3600000 * 24).toISOString();
-  const d2 = new Date(now.getTime() - 3600000 * 12).toISOString();
-  const d3 = new Date(now.getTime() - 3600000 * 2).toISOString();
+  if (!existing || existing.length === 0) {
+    saveTasks(OFFICIAL_PLAN_TASKS);
+    return;
+  }
 
-  const demoTasks = [
-    {
-      id: 'tsk_demo_1',
-      title: 'إطلاق حملة التوعية الطبية ومحتوى السوشيال ميديا',
-      description: 'تصميم البوسترات ونشر الفيديوهات التوعوية لفعالية Microscope السنوية عبر المنصات.',
-      committees: ['Social Media', 'Design', 'PR'],
-      headName: 'د. يوسف الشناوي',
-      priority: 'high',
-      isActive: true,
-      status: 'progress',
-      dueDate: new Date(now.getTime() + 86400000 * 3).toISOString().split('T')[0],
-      createdAt: d1,
-      updatedAt: d3,
-      timeline: { created: d1, received: d1, progress: d2, done: null }
-    },
-    {
-      id: 'tsk_demo_2',
-      title: 'تجهيز قاعات ورش العمل والمطبوعات الإرشادية',
-      description: 'حجز وتجهيز أجهزة العرض وتوزيع المواد العلمية على جميع الطلاب المسجلين بالورشة.',
-      committees: ['Logistics', 'Organizing'],
-      headName: 'م. أحمد خالد',
-      priority: 'normal',
-      isActive: true,
-      status: 'received',
-      dueDate: new Date(now.getTime() + 86400000 * 5).toISOString().split('T')[0],
-      createdAt: d2,
-      updatedAt: d2,
-      timeline: { created: d2, received: d2, progress: null, done: null }
-    },
-    {
-      id: 'tsk_demo_3',
-      title: 'أرشفة بيانات المشتركين وتحديث قاعدة البيانات',
-      description: 'إدخال استمارات العضوية الجديدة في نظام Firebase والتأكد من مطابقة الأرقام القومية.',
-      committees: ['IT & Tech', 'HR'],
-      headName: 'مؤمن بهاري',
-      priority: 'high',
-      isActive: true,
-      status: 'done',
-      dueDate: new Date(now.getTime() - 86400000).toISOString().split('T')[0],
-      createdAt: d1,
-      updatedAt: d3,
-      timeline: { created: d1, received: d1, progress: d2, done: d3 }
+  // Ensure all official plan tasks exist in storage without overriding user modifications
+  let updated = false;
+  OFFICIAL_PLAN_TASKS.forEach(planTask => {
+    const found = existing.some(t => t.id === planTask.id || t.title === planTask.title);
+    if (!found) {
+      existing.push(planTask);
+      updated = true;
     }
-  ];
+  });
 
-  saveTasks(demoTasks);
+  if (updated) {
+    saveTasks(existing);
+  }
 }
+
