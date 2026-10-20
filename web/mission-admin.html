@@ -3,147 +3,214 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MICROSCOPE MISSION — لوحة الإدارة</title>
-  <meta name="description" content="لوحة إدارة مهام MICROSCOPE MISSION — إضافة وتعديل ومتابعة المهام">
+  <title>MICROSCOPE MISSION — لوحة الإدارة الذكية</title>
+  <meta name="description" content="لوحة إدارة مهام MICROSCOPE MISSION — نظام إدارة المهام وتتبع اللجان المتقدم">
   <link rel="stylesheet" href="mission.css">
   <style>
-    .login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-glow);
-      border-radius: var(--radius-xl);
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: var(--shadow-heavy), 0 0 60px rgba(0,212,255,0.1);
-      text-align: center;
-    }
-    .login-icon { font-size: 56px; margin-bottom: 16px; }
-    .login-title { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; margin-bottom: 6px; }
-    .login-sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; }
-    .login-pin {
-      display: flex; justify-content: center; gap: 12px; margin-bottom: 28px;
-    }
-    .pin-digit {
-      width: 54px; height: 64px;
-      background: var(--bg-secondary);
-      border: 2px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      text-align: center;
-      font-size: 28px; font-weight: 700;
-      color: var(--text-primary);
-      font-family: 'Rajdhani', sans-serif;
-      outline: none;
-      transition: all 0.3s ease;
-      caret-color: var(--accent-cyan);
-    }
-    .pin-digit:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.15); }
-    .pin-error { color: var(--accent-red); font-size: 13px; margin-bottom: 12px; min-height: 20px; }
-
-    /* ADMIN CONTENT */
     #adminContent { display: block; }
 
-    .admin-toolbar {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      margin-bottom: 28px;
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: wrap;
+    .page-header { padding: 32px 0 20px; text-align: center; }
+    .page-header h2 {
+      font-family: 'Rajdhani', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal), var(--accent-amber));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-transform: uppercase;
     }
+    .page-header p { color: var(--text-secondary); font-size: 14px; margin-top: 6px; }
 
-    .admin-toolbar h3 {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-primary);
-      flex: 1;
-    }
-
-    /* STATUS CHANGE BUTTONS */
-    .status-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-    .task-admin-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 24px 28px;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .task-admin-card::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    }
-    .task-admin-card.status-inactive::before { background: var(--text-muted); }
-    .task-admin-card.status-received::before { background: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,212,255,0.5); }
-    .task-admin-card.status-progress::before { background: var(--accent-amber); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
-    .task-admin-card.status-done::before    { background: var(--accent-green); box-shadow: 0 0 10px rgba(16,185,129,0.5); }
-
-    .task-admin-card:hover { border-color: rgba(0,212,255,0.2); box-shadow: var(--shadow-card); }
-
-    .admin-task-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-    .admin-task-title { font-size: 18px; font-weight: 700; color: var(--text-primary); flex: 1; }
-    .admin-task-meta { color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; line-height: 1.6; }
-    .admin-task-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-
-    .admin-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
-    .admin-date { margin-left: auto; font-size: 12px; color: var(--text-muted); }
-
-    /* PRIORITY SELECT */
-    .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 6px; }
-    .priority-dot.high { background: var(--accent-red); }
-    .priority-dot.normal { background: var(--text-muted); }
-
-    /* LINKS PANEL */
     .links-panel {
       background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,180,160,0.04));
-      border: 1px solid var(--border-glow);
-      border-radius: var(--radius-lg);
-      padding: 24px 28px;
-      margin-bottom: 28px;
+      border: 1px solid rgba(0,212,255,0.22); border-radius: var(--radius-lg); padding: 18px 22px; margin-bottom: 22px;
     }
-
-    .links-panel h3 { color: var(--accent-cyan); font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
+    .links-panel h3 {
+      color: var(--accent-cyan); font-size: 13px; font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px;
+    }
     .link-row {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 10px; background: rgba(9,20,38,0.65);
+      border: 1px solid rgba(0,180,160,0.18); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .link-row:last-child { margin-bottom: 0; }
+    .link-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 110px; }
+    .link-url { flex: 1; font-size: 12px; color: var(--accent-cyan); word-break: break-all; opacity: 0.9; }
+    .link-copy {
+      background: none; border: 1px solid rgba(0,212,255,0.25); color: var(--accent-cyan);
+      padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      font-family: 'Cairo', sans-serif; transition: all 0.2s; white-space: nowrap;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .link-copy:hover { background: rgba(0,212,255,0.12); border-color: var(--accent-cyan); }
+
+    .stats-bar { display: flex; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1; min-width: 130px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 18px 16px; text-align: center;
+      position: relative; overflow: hidden; transition: all 0.3s ease;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    .stat-card.cyan::before  { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--accent-amber), #f97316); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--accent-green), #059669); }
+    .stat-card.red::before   { background: linear-gradient(90deg, var(--accent-red), #dc2626); }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .stat-number { font-family: 'Rajdhani', sans-serif; font-size: 34px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .stat-label  { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+    .admin-toolbar {
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+      padding: 14px 20px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .admin-toolbar h3 { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); flex: 1; min-width: 80px; }
+
+    /* View Mode Switcher */
+    .view-switcher {
+      display: flex; background: rgba(4,10,22,0.6); border: 1px solid var(--border-subtle);
+      padding: 3px; border-radius: 8px; gap: 4px;
+    }
+    .v-btn {
+      background: transparent; border: none; color: var(--text-secondary);
+      padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Cairo', sans-serif;
+      font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;
+    }
+    .v-btn.active {
+      background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+      color: #040914; font-weight: 700;
     }
 
-    .link-row .link-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); min-width: 120px; }
-    .link-row .link-url { flex: 1; font-size: 13px; color: var(--accent-cyan); word-break: break-all; }
-    .link-copy { background: none; border: 1px solid rgba(0,212,255,0.3); color: var(--accent-cyan); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Cairo',sans-serif; transition: all 0.2s; white-space: nowrap; }
-    .link-copy:hover { background: rgba(0,212,255,0.1); }
+    /* Cards View */
+    .tasks-grid { display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+    .task-admin-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+      padding: 22px 24px 18px 28px; transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .task-admin-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px; border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+    .task-admin-card.status-inactive::before { background: var(--text-muted); }
+    .task-admin-card.status-received::before { background: var(--accent-cyan);  box-shadow: 0 0 12px rgba(0,212,255,0.4); }
+    .task-admin-card.status-progress::before { background: var(--accent-amber); box-shadow: 0 0 12px rgba(245,158,11,0.4); }
+    .task-admin-card.status-done::before     { background: var(--accent-green); box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+    .task-admin-card:hover { border-color: rgba(0,212,255,0.25); box-shadow: 0 8px 28px rgba(0,0,0,0.35); transform: translateY(-2px); }
 
-    /* SETTINGS */
-    .settings-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .admin-task-header  { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+    .admin-task-title   { font-size: 17px; font-weight: 700; color: var(--text-primary); flex: 1; line-height: 1.4; }
+    .admin-task-meta    { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; line-height: 1.65; }
+    .admin-task-badges  { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+    .admin-actions      { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 12px; border-top: 1px solid rgba(0,180,160,0.12); margin-top: 4px; }
 
-    /* MODAL FORM SPECIFIC */
-    .form-label-big { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .task-number {
+      position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+      background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.14);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-muted);
+    }
+
+    /* ── Special Feature: KANBAN BOARD MATRIX ── */
+    #kanbanBoard {
+      display: none; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 50px; overflow-x: auto; padding-bottom: 16px;
+    }
+    .kanban-col {
+      background: rgba(8, 18, 34, 0.7); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: 16px 14px; min-width: 270px;
+      display: flex; flex-direction: column; gap: 12px; min-height: 480px;
+    }
+    .kanban-col-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .kanban-col-title {
+      font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px;
+    }
+    .kanban-count {
+      background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; color: var(--text-secondary);
+    }
+    .kanban-items { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .kanban-card {
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 14px; transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 8px;
+    }
+    .kanban-card:hover {
+      border-color: rgba(0,212,255,0.3); transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .kanban-card-title { font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--text-primary); }
+    .kanban-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; max-height: 48px; overflow: hidden; }
+    .kanban-card-foot {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: #091322; border: 1px solid rgba(0,212,255,0.25);
+      border-radius: var(--radius-xl); padding: 28px; width: 92%; max-width: 680px; max-height: 90vh; overflow-y: auto;
+      transform: scale(0.93) translateY(16px); transition: transform 0.3s ease;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 0 60px rgba(0,212,255,0.1);
+    }
+    .modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(0,212,255,0.14);
+    }
+    .modal-title { font-family: 'Rajdhani', sans-serif; font-size: 21px; font-weight: 700; color: var(--text-primary); letter-spacing: 1px; }
+    .modal-close {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-secondary); cursor: pointer; width: 34px; height: 34px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+
+    .form-section {
+      background: rgba(13,31,53,0.7); border: 1px solid rgba(0,180,160,0.15);
+      border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+    }
+    .form-section-title {
+      font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,212,255,0.12);
+    }
+
+    .confirm-actions { display: flex; gap: 12px; justify-content: center; }
+    .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 56px; margin-bottom: 14px; opacity: 0.35; }
+    .empty-state h3 { font-size: 18px; color: var(--text-secondary); margin-bottom: 6px; }
+
+    /* Telegram Dispatch Box */
+    .tg-preview-box {
+      background: rgba(2, 6, 14, 0.85); border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 12px; padding: 16px; font-family: monospace; font-size: 12px;
+      color: #7dd3fc; line-height: 1.6; white-space: pre-wrap; direction: ltr; text-align: left;
+      margin-bottom: 16px; max-height: 240px; overflow-y: auto;
+    }
+
+    @media (max-width: 900px) {
+      #kanbanBoard { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .stats-bar { gap: 10px; }
+      .stat-card { padding: 14px 10px; min-width: 45%; }
+      .stat-number { font-size: 26px; }
+      .admin-toolbar { padding: 12px 14px; }
+      .task-admin-card { padding: 18px 18px 14px 22px; }
+      .modal-box { padding: 20px 16px; }
+      #kanbanBoard { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-
-<!-- ADMIN CONTENT -->
 <div id="adminContent">
-
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="container">
       <div class="navbar-inner">
@@ -151,285 +218,314 @@
           <div class="brand-icon">🔬</div>
           <div class="brand-text">
             <h1>MICROSCOPE MISSION</h1>
-            <span>Admin Panel</span>
+            <span>Admin Mission Control Center</span>
           </div>
         </div>
         <div class="navbar-actions">
-          <span class="admin-badge">ADMIN</span>
-          <a href="mission-view.html" class="btn btn-primary btn-sm">👁️ صفحة العرض</a>
-          <button class="btn btn-ghost btn-sm" onclick="logout()">🚪 خروج</button>
+          <span class="badge" style="background:linear-gradient(135deg,var(--accent-amber),#ea580c);color:#040914;font-weight:900">ADMIN CONTROL</span>
+          <button class="btn btn-ghost btn-sm" onclick="exportTasksReport()">📄 تقرير المهام</button>
+          <a href="mission-view.html" class="btn btn-primary btn-sm">👁️ صفحة العرض المباشر</a>
         </div>
       </div>
     </div>
   </nav>
 
-  <main>
+  <main style="padding-top:12px">
     <div class="container">
 
       <div class="page-header">
-        <h2>Admin Control</h2>
-        <p>إدارة المهام — إضافة وتعديل وتتبع حالة التنفيذ</p>
+        <h2>لوحة التحكم بالمهام</h2>
+        <p>إدارة وتكليف ومتابعة إنجاز المهام للجان المختلفة عبر شاشات المتابعة وبوت التيليجرام</p>
       </div>
 
-      <!-- LINKS PANEL -->
       <div class="links-panel">
-        <h3>🔗 روابط الموقع</h3>
+        <h3>🔗 روابط سريعة للمنظومة</h3>
         <div class="link-row">
-          <span class="link-label">📖 رابط العرض</span>
+          <span class="link-label">📖 رابط عرض المهام</span>
           <span class="link-url" id="viewLink">—</span>
           <button class="link-copy" onclick="copyLink('viewLink')">📋 نسخ</button>
-          <a id="viewLinkBtn" href="#" target="_blank" class="link-copy">🔗 فتح</a>
+          <a id="viewLinkBtn" href="mission-view.html" target="_blank" class="link-copy">🔗 فتح</a>
         </div>
         <div class="link-row">
           <span class="link-label">⚙️ رابط الإدارة</span>
           <span class="link-url" id="adminLink">—</span>
           <button class="link-copy" onclick="copyLink('adminLink')">📋 نسخ</button>
-          <a id="adminLinkBtn" href="#" target="_blank" class="link-copy">🔗 فتح</a>
+          <a id="adminLinkBtn" href="mission-admin.html" target="_blank" class="link-copy">🔗 فتح</a>
         </div>
       </div>
 
-      <!-- STATS -->
       <div class="stats-bar">
         <div class="stat-card cyan"><div class="stat-number" id="statTotal">0</div><div class="stat-label">إجمالي المهام</div></div>
-        <div class="stat-card amber"><div class="stat-number" id="statActive">0</div><div class="stat-label">مفعّلة</div></div>
+        <div class="stat-card amber"><div class="stat-number" id="statActive">0</div><div class="stat-label">قيد التنفيذ</div></div>
         <div class="stat-card green"><div class="stat-number" id="statDone">0</div><div class="stat-label">مكتملة</div></div>
         <div class="stat-card red"><div class="stat-number" id="statInactive">0</div><div class="stat-label">غير مفعّلة</div></div>
       </div>
 
-      <!-- TOOLBAR -->
       <div class="admin-toolbar">
-        <h3>📋 المهام</h3>
-        <div class="search-input-wrap" style="max-width:280px">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="adminSearch" placeholder="بحث..." oninput="adminFilter()">
+        <h3>📋 قائمة المهام</h3>
+        <div class="view-switcher">
+          <button class="v-btn active" id="btnViewList" onclick="switchViewMode('list')">📑 قائمة</button>
+          <button class="v-btn" id="btnViewKanban" onclick="switchViewMode('kanban')">📊 كانبان Board</button>
         </div>
-        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:160px; padding:9px 12px">
+        <div class="search-input-wrap" style="max-width:240px;flex:1;min-width:140px">
+          <input type="text" class="form-control" id="adminSearch" placeholder="🔍 بحث في المهام..." oninput="adminFilter()" style="padding:7px 12px;font-size:12px;border-radius:20px">
+        </div>
+        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:140px;padding:7px 10px;font-size:12px">
           <option value="all">كل الحالات</option>
           <option value="inactive">غير مفعّلة</option>
           <option value="received">استُلمت</option>
           <option value="progress">جاري</option>
           <option value="done">مكتملة</option>
         </select>
-        <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة مهمة</button>
-        <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙️ إعدادات</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()" style="white-space:nowrap">➕ مهمة جديدة</button>
+        <button class="btn btn-ghost btn-sm" onclick="openSettings()" style="white-space:nowrap">⚙️ إعدادات</button>
       </div>
 
-      <!-- TASKS GRID -->
+      <!-- VIEW 1: TASKS GRID -->
       <div class="tasks-grid" id="adminGrid"></div>
+
+      <!-- VIEW 2: KANBAN BOARD (SPECIAL FEATURE) -->
+      <div id="kanbanBoard">
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:var(--text-muted)">⏸️ غير مفعّلة</span>
+            <span class="kanban-count" id="kCount-inactive">0</span>
+          </div>
+          <div class="kanban-items" id="kCol-inactive"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:var(--accent-cyan)">📥 استُلمت</span>
+            <span class="kanban-count" id="kCount-received">0</span>
+          </div>
+          <div class="kanban-items" id="kCol-received"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:var(--accent-amber)">⚡ قيد التنفيذ</span>
+            <span class="kanban-count" id="kCount-progress">0</span>
+          </div>
+          <div class="kanban-items" id="kCol-progress"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span class="kanban-col-title" style="color:var(--accent-green)">✅ مكتملة</span>
+            <span class="kanban-count" id="kCount-done">0</span>
+          </div>
+          <div class="kanban-items" id="kCol-done"></div>
+        </div>
+      </div>
 
     </div>
   </main>
 </div>
 
-<!-- ADD / EDIT MODAL -->
+<!-- ADD/EDIT MODAL -->
 <div class="modal-overlay" id="taskModal">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" id="modalTitle">➕ إضافة مهمة</div>
+      <div class="modal-title" id="modalTitle">إضافة مهمة</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-
     <form id="taskForm" onsubmit="saveTask(event)">
       <input type="hidden" id="editingId">
-
-      <div class="form-section" style="margin-bottom:20px">
-        <div class="form-section-title">📋 تفاصيل المهمة</div>
-
-        <div class="form-row single">
-          <div class="form-group">
-            <label><span class="required">*</span> عنوان المهمة</label>
-            <input type="text" class="form-control" id="fTitle" placeholder="أدخل عنوان المهمة..." required>
-          </div>
-        </div>
-
-        <div class="form-row single">
-          <div class="form-group">
-            <label><span class="required">*</span> محتوى المهمة</label>
-            <textarea class="form-control" id="fDesc" rows="4" placeholder="اكتب تفاصيل المهمة هنا..." required></textarea>
-          </div>
-        </div>
-
+      <div class="form-section">
+        <div class="form-section-title">بيانات وتفاصيل التكليف</div>
+        <div class="form-row single"><div class="form-group">
+          <label><span class="required">*</span> عنوان المهمة</label>
+          <input type="text" class="form-control" id="fTitle" placeholder="أدخل عنواناً واضحاً وموجزاً..." required>
+        </div></div>
+        <div class="form-row single"><div class="form-group">
+          <label><span class="required">*</span> محتوى ومطلوبات المهمة</label>
+          <textarea class="form-control" id="fDesc" rows="4" placeholder="اكتب التفاصيل والمطلوبات بدقة..." required></textarea>
+        </div></div>
         <div class="form-row">
           <div class="form-group">
             <label><span class="required">*</span> اللجان المعنية</label>
             <div class="tags-input-wrapper" id="committeesWrapper" onclick="document.getElementById('committeeInput').focus()">
               <input type="text" class="tags-input" id="committeeInput" placeholder="اكتب اسم اللجنة واضغط Enter..." onkeydown="addCommittee(event)">
             </div>
-            <span style="font-size:11px;color:var(--text-muted)">اضغط Enter أو فاصلة لإضافة لجنة</span>
+            <span style="font-size:11px;color:var(--text-muted)">اضغط Enter أو فاصلة لإضافة لجنة (مثل: IT, HR, PR)</span>
           </div>
           <div class="form-group">
-            <label><span class="required">*</span> رئيس اللجنة</label>
-            <input type="text" class="form-control" id="fHead" placeholder="اسم رئيس اللجنة...">
+            <label>المسؤول / رئيس اللجنة</label>
+            <input type="text" class="form-control" id="fHead" placeholder="اسم رئيس اللجنة أو المسؤول...">
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
-            <label>الأولوية</label>
+            <label>مستوى الأولوية</label>
             <select class="form-control" id="fPriority">
-              <option value="normal">🔵 عادية</option>
-              <option value="high">🔴 عالية</option>
+              <option value="normal">عادية (Standard)</option>
+              <option value="high">🔴 عاجلة وقصوى (High Priority)</option>
             </select>
           </div>
           <div class="form-group">
-            <label>الحالة الابتدائية</label>
+            <label>الحالة الابتدائية للتكليف</label>
             <select class="form-control" id="fActive">
-              <option value="0">⏸️ غير مفعّلة</option>
-              <option value="1">▶️ تفعيل فوري</option>
+              <option value="1">تفعيل فوري وبدء الاستلام</option>
+              <option value="0">مسودة (غير مفعّلة حالياً)</option>
             </select>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>📅 موعد التسليم النهائي (Deadline)</label>
+            <input type="date" class="form-control" id="fDueDate">
           </div>
         </div>
       </div>
-
-      <div style="display:flex; gap:12px; justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-        <button type="submit" class="btn btn-primary">💾 حفظ المهمة</button>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary btn-sm">💾 حفظ المهمة</button>
       </div>
     </form>
   </div>
 </div>
 
+<!-- TELEGRAM DISPATCH MODAL (SPECIAL FEATURE) -->
+<div class="modal-overlay" id="tgModal">
+  <div class="modal-box" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">📢 إشعار تيليجرام للبوت واللجان</div>
+      <button class="modal-close" onclick="closeTgModal()">✕</button>
+    </div>
+    <p style="color:var(--text-secondary);font-size:12px;margin-bottom:12px">
+      تم تجهيز نص التكليف بصيغة Telegram Markdown المهيأة للنشر المباشر في قنوات ومجموعات اللجان:
+    </p>
+    <div class="tg-preview-box" id="tgTextPreview"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeTgModal()">إغلاق</button>
+      <button class="btn btn-primary btn-sm" onclick="copyTgMessage()">📋 نسخ النص لتيليجرام</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
-  <div class="modal-box" style="max-width:480px">
+  <div class="modal-box" style="max-width:440px">
     <div class="modal-header">
-      <div class="modal-title">⚙️ الإعدادات</div>
+      <div class="modal-title">إعدادات المنظومة</div>
       <button class="modal-close" onclick="closeSettings()">✕</button>
     </div>
-
     <div class="form-section">
-      <div class="form-section-title">🔐 تغيير كلمة المرور / رمز الأدمن</div>
-      <div class="form-row single">
-        <div class="form-group">
-          <label>كلمة المرور أو الـ ID الحالي</label>
-          <input type="password" class="form-control" id="currentPin" placeholder="أدخل الرمز الحالي...">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>كلمة المرور الجديدة</label>
-          <input type="password" class="form-control" id="newPin" placeholder="الرمز الجديد...">
-        </div>
-        <div class="form-group">
-          <label>تأكيد كلمة المرور الجديدة</label>
-          <input type="password" class="form-control" id="confirmPin" placeholder="تأكيد الرمز الجديد...">
-        </div>
-      </div>
-      <button class="btn btn-amber" onclick="changePin()" style="width:100%">🔐 تحديث كلمة المرور</button>
+      <div class="form-section-title">إدارة وتنظيف البيانات</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">حذف جميع المهام التي اكتمل تنفيذها من قاعدة البيانات</p>
+      <button class="btn btn-danger btn-sm" onclick="clearDone()">🗑️ حذف المهام المكتملة</button>
     </div>
-
-    <div class="form-section">
-      <div class="form-section-title">🗑️ إدارة البيانات</div>
-      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">حذف جميع المهام المكتملة من القائمة</p>
-      <button class="btn btn-danger btn-sm" onclick="clearDone()">🗑️ حذف المكتملة</button>
+    <div class="form-section" style="margin-top:14px">
+      <div class="form-section-title">إعادة تهيئة البيانات التجريبية</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">إعادة تحميل نماذج مهام جاهزة للمعاينة</p>
+      <button class="btn btn-ghost btn-sm" onclick="resetDemoTasks()">🔄 إعادة تحميل الديمو</button>
     </div>
   </div>
 </div>
 
-<!-- DELETE CONFIRM MODAL -->
+<!-- DELETE MODAL -->
 <div class="modal-overlay" id="deleteModal">
-  <div class="modal-box" style="max-width:420px">
-    <div style="text-align:center; padding: 12px 0">
-      <div style="font-size:52px;margin-bottom:16px">⚠️</div>
-      <h3 style="font-size:22px;margin-bottom:10px;color:var(--text-primary)">حذف المهمة؟</h3>
-      <p style="color:var(--text-secondary);margin-bottom:28px;font-size:14px">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المهمة نهائياً.</p>
-      <div class="confirm-actions">
-        <button class="btn btn-ghost" onclick="closeDeleteModal()">إلغاء</button>
-        <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">🗑️ نعم، احذف</button>
-      </div>
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:46px;margin-bottom:12px">⚠️</div>
+    <h3 style="font-size:19px;margin-bottom:8px;color:var(--text-primary)">حذف هذه المهمة نهائياً؟</h3>
+    <p style="color:var(--text-secondary);margin-bottom:20px;font-size:13px;line-height:1.6">
+      لا يمكن التراجع عن هذا الإجراء وسيتم شطب المهمة وسجل تتبعها بالكامل.
+    </p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeDeleteModal()">إلغاء</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete()">🗑️ نعم، احذف</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- Shared Data Script -->
 <script src="mission-data.js"></script>
+
 <script>
+let currentViewMode = 'list'; // 'list' | 'kanban'
+let committees = [];
+let pendingDeleteId = null;
+let currentTgText = '';
+let adminSearchQuery = '';
+let adminStatusFilter = 'all';
 
-// ────────────────────────────────────────────────
-// LINKS
-// ────────────────────────────────────────────────
 function setLinks() {
-  const base = window.location.href.replace(/[^/]*$/, '');
-  const vLink = base + 'mission-view.html';
-  const aLink = base + 'mission-admin.html';
-
-  const vl = document.getElementById('viewLink');
-  const vlb = document.getElementById('viewLinkBtn');
-  const al = document.getElementById('adminLink');
-  const alb = document.getElementById('adminLinkBtn');
-
-  if (vl) vl.textContent = vLink;
-  if (vlb) vlb.href = vLink;
-  if (al) al.textContent = aLink;
-  if (alb) alb.href = aLink;
+  const b = window.location.href.replace(/[^\/]*$/, '');
+  const vl = document.getElementById('viewLink'), vlb = document.getElementById('viewLinkBtn');
+  const al = document.getElementById('adminLink'), alb = document.getElementById('adminLinkBtn');
+  if (vl) vl.textContent = b + 'mission-view.html';
+  if (vlb) vlb.href = b + 'mission-view.html';
+  if (al) al.textContent = b + 'mission-admin.html';
+  if (alb) alb.href = b + 'mission-admin.html';
 }
 
 function copyLink(id) {
   const text = document.getElementById(id).textContent;
-  navigator.clipboard.writeText(text).then(() => showToast('تم نسخ الرابط!', 'success'));
+  navigator.clipboard.writeText(text).then(() => showToast('تم نسخ الرابط بنجاح!', 'success'));
 }
 
-// ────────────────────────────────────────────────
-// TAGS / COMMITTEES
-// ────────────────────────────────────────────────
-let committees = [];
+// ── View Mode Switcher ──
+function switchViewMode(mode) {
+  currentViewMode = mode;
+  document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
+  document.getElementById('btnViewKanban').classList.toggle('active', mode === 'kanban');
+  document.getElementById('adminGrid').style.display = mode === 'list' ? 'flex' : 'none';
+  document.getElementById('kanbanBoard').style.display = mode === 'kanban' ? 'grid' : 'none';
+  renderAdmin();
+}
 
+// ── Tags Management ──
 function addCommittee(e) {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
-    const val = e.target.value.trim();
-    if (val && !committees.includes(val)) {
-      committees.push(val);
+    const v = e.target.value.trim();
+    if (v && !committees.includes(v)) {
+      committees.push(v);
       renderTags();
     }
     e.target.value = '';
   }
 }
-
-function removeCommittee(name) {
-  committees = committees.filter(c => c !== name);
+function removeCommittee(n) {
+  committees = committees.filter(c => c !== n);
   renderTags();
 }
-
 function renderTags() {
-  const wrapper = document.getElementById('committeesWrapper');
-  const input = document.getElementById('committeeInput');
-  wrapper.querySelectorAll('.tag-item').forEach(t => t.remove());
+  const w = document.getElementById('committeesWrapper');
+  const inp = document.getElementById('committeeInput');
+  w.querySelectorAll('.tag-item').forEach(t => t.remove());
   committees.forEach(c => {
-    const tag = document.createElement('div');
-    tag.className = 'tag-item';
-    tag.innerHTML = `${c}<button class="tag-remove" type="button" onclick="removeCommittee('${c.replace(/'/g,"\\'")}')">✕</button>`;
-    wrapper.insertBefore(tag, input);
+    const t = document.createElement('div');
+    t.className = 'tag-item';
+    t.innerHTML = `${c}<button class="tag-remove" type="button" onclick="removeCommittee('${c.replace(/'/g, "\\'")}')">✕</button>`;
+    w.insertBefore(t, inp);
   });
 }
 
-// ────────────────────────────────────────────────
-// MODAL - ADD / EDIT
-// ────────────────────────────────────────────────
+// ── Modals Management ──
 function openAddModal() {
   committees = [];
   renderTags();
   document.getElementById('taskForm').reset();
   document.getElementById('editingId').value = '';
+  document.getElementById('fDueDate').value = '';
   document.getElementById('modalTitle').textContent = '➕ إضافة مهمة جديدة';
   document.getElementById('taskModal').classList.add('open');
 }
 
 function openEditModal(id) {
-  const task = getTask(id);
-  if (!task) return;
-
-  committees = [...(task.committees || [])];
+  const t = getTask(id);
+  if (!t) return;
+  committees = [...(t.committees || [])];
   renderTags();
   document.getElementById('editingId').value = id;
-  document.getElementById('fTitle').value = task.title;
-  document.getElementById('fDesc').value = task.description;
-  document.getElementById('fHead').value = task.headName || '';
-  document.getElementById('fPriority').value = task.priority || 'normal';
-  document.getElementById('fActive').value = task.isActive ? '1' : '0';
-  document.getElementById('modalTitle').textContent = '✏️ تعديل المهمة';
+  document.getElementById('fTitle').value = t.title;
+  document.getElementById('fDesc').value = t.description;
+  document.getElementById('fHead').value = t.headName || '';
+  document.getElementById('fPriority').value = t.priority || 'normal';
+  document.getElementById('fActive').value = t.isActive ? '1' : '0';
+  document.getElementById('fDueDate').value = t.dueDate || '';
+  document.getElementById('modalTitle').textContent = '✏️ تعديل بيانات المهمة';
   document.getElementById('taskModal').classList.add('open');
 }
 
@@ -439,230 +535,304 @@ function closeModal() {
 
 function saveTask(e) {
   e.preventDefault();
-  if (committees.length === 0) {
-    showToast('أضف لجنة واحدة على الأقل', 'error');
+  if (!committees.length) {
+    showToast('يرجى إضافة لجنة واحدة على الأقل', 'error');
     return;
   }
-
   const data = {
     title: document.getElementById('fTitle').value.trim(),
     description: document.getElementById('fDesc').value.trim(),
-    committees,
+    committees: [...committees],
     headName: document.getElementById('fHead').value.trim(),
     priority: document.getElementById('fPriority').value,
+    dueDate: document.getElementById('fDueDate').value
   };
-
   const id = document.getElementById('editingId').value;
-  const shouldActivate = document.getElementById('fActive').value === '1';
+  const isAct = document.getElementById('fActive').value === '1';
 
   if (id) {
     updateTask(id, data);
-    if (shouldActivate && !getTask(id).isActive) toggleActive(id, true);
-    showToast('تم تحديث المهمة بنجاح', 'success');
+    toggleActive(id, isAct);
+    showToast('تم تحديث المهمة بنجاح ✅', 'success');
   } else {
-    const task = createTask(data);
-    if (shouldActivate) toggleActive(task.id, true);
-    showToast('تمت إضافة المهمة بنجاح', 'success');
+    data.isActive = isAct;
+    createTask(data);
+    showToast('تم إنشاء المهمة بنجاح 🚀', 'success');
   }
-
   closeModal();
   renderAdmin();
 }
-
-// ────────────────────────────────────────────────
-// DELETE
-// ────────────────────────────────────────────────
-let pendingDeleteId = null;
 
 function openDeleteModal(id) {
   pendingDeleteId = id;
   document.getElementById('deleteModal').classList.add('open');
 }
-
 function closeDeleteModal() {
   pendingDeleteId = null;
   document.getElementById('deleteModal').classList.remove('open');
 }
-
 function confirmDelete() {
   if (pendingDeleteId) {
     deleteTask(pendingDeleteId);
-    showToast('تم حذف المهمة', 'info');
+    showToast('تم حذف المهمة نهائياً', 'info');
     renderAdmin();
     closeDeleteModal();
   }
 }
 
-// ────────────────────────────────────────────────
-// STATUS MANAGEMENT
-// ────────────────────────────────────────────────
 function toggleTaskActive(id, val) {
   toggleActive(id, val);
   renderAdmin();
-  showToast(val ? '✅ تم تفعيل المهمة' : '⏸️ تم إيقاف المهمة', val ? 'success' : 'info');
+  showToast(val ? '🟢 تم تفعيل المهمة' : '⏸️ تم إيقاف المهمة', val ? 'success' : 'info');
 }
 
 function advanceTaskStatus(id) {
-  const task = getTask(id);
-  if (!task) return;
-  if (!task.isActive) { showToast('فعّل المهمة أولاً', 'error'); return; }
-  if (task.status === 'done') { showToast('المهمة مكتملة بالفعل', 'info'); return; }
-  const order = ['inactive','received','progress','done'];
-  const nextIdx = order.indexOf(task.status) + 1;
-  if (nextIdx >= order.length) return;
-  advanceStatus(id);
+  const t = getTask(id);
+  if (!t) return;
+  if (!t.isActive) {
+    showToast('فعّل المهمة أولاً قبل تقدم الحالة', 'warning');
+    return;
+  }
+  if (t.status === 'done') {
+    showToast('المهمة مكتملة بالفعل', 'info');
+    return;
+  }
+  const updated = advanceStatus(id);
   renderAdmin();
-  const s = STATUSES[order[nextIdx]];
-  showToast(`تم تحديث الحالة: ${s.label}`, 'success');
+  if (updated) {
+    showToast(`تم التحديث: ${STATUSES[updated.status].label} ${STATUSES[updated.status].icon}`, 'success');
+  }
 }
 
-// ────────────────────────────────────────────────
-// RENDER
-// ────────────────────────────────────────────────
-let adminSearchQuery = '';
-let adminStatusFilter = 'all';
+function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function clearDone() {
+  saveTasks(loadTasks().filter(t => t.status !== 'done'));
+  showToast('تم تنظيف المهام المكتملة', 'info');
+  renderAdmin();
+  closeSettings();
+}
+function resetDemoTasks() {
+  localStorage.removeItem(STORAGE_KEY);
+  seedDemo();
+  showToast('تم استعادة المهام التجريبية ✅', 'success');
+  renderAdmin();
+  closeSettings();
+}
 
+// ── Special Feature: Telegram Dispatcher Modal ──
+function openTelegramDispatcher(id) {
+  const t = getTask(id);
+  if (!t) return;
+  const committeesStr = (t.committees || []).map(c => `#${c.replace(/\s+/g, '_')}`).join(' ');
+  const priorityStr = t.priority === 'high' ? '🔴 *عاجل وقصوى*' : '🔵 *عادية*';
+  const statusStr = STATUSES[t.status] ? `${STATUSES[t.status].icon} ${STATUSES[t.status].label}` : '';
+  const dueStr = t.dueDate ? `📅 *الموعد النهائي:* ${t.dueDate}` : '';
+
+  currentTgText = `🔬 *تكليف رسمي — MICROSCOPE TEAM*\n`
+    + `━━━━━━━━━━━━━━━━━━━━━\n`
+    + `📌 *المهمة:* ${t.title}\n`
+    + `🏛 *اللجان المعنية:* ${committeesStr}\n`
+    + (t.headName ? `👤 *المسؤول:* ${t.headName}\n` : '')
+    + `⚡ *الأولوية:* ${priorityStr}\n`
+    + `📊 *الحالة الحالية:* ${statusStr}\n`
+    + (dueStr ? `${dueStr}\n` : '')
+    + `━━━━━━━━━━━━━━━━━━━━━\n`
+    + `📝 *تفاصيل التكليف:*\n${t.description}\n\n`
+    + `🔗 *تابع التحديثات عبر لوحة المهام المباشرة:* [رابط المتابعة](${window.location.origin}/web/mission-view.html)`;
+
+  document.getElementById('tgTextPreview').textContent = currentTgText;
+  document.getElementById('tgModal').classList.add('open');
+}
+function closeTgModal() {
+  document.getElementById('tgModal').classList.remove('open');
+}
+function copyTgMessage() {
+  navigator.clipboard.writeText(currentTgText).then(() => {
+    showToast('تم نسخ نص التكليف لتيليجرام بنجاح! 🚀', 'success');
+    closeTgModal();
+  });
+}
+
+// ── Special Feature: Export Tasks Report ──
+function exportTasksReport() {
+  const tasks = loadTasks();
+  if (!tasks.length) {
+    showToast('لا توجد مهام لتصديرها', 'warning');
+    return;
+  }
+  const printWindow = window.open('', '_blank');
+  const rows = tasks.map((t, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${t.title}</strong><br><small>${t.description}</small></td>
+      <td>${(t.committees || []).join(', ')}</td>
+      <td>${t.headName || '—'}</td>
+      <td>${t.priority === 'high' ? 'عالية' : 'عادية'}</td>
+      <td>${STATUSES[t.status]?.label || t.status}</td>
+      <td>${t.dueDate || '—'}</td>
+    </tr>
+  `).join('');
+
+  printWindow.document.write(`
+    <html dir="rtl">
+    <head>
+      <title>تقرير مهام MICROSCOPE MISSION</title>
+      <style>
+        body { font-family: Cairo, Tahoma, sans-serif; padding: 30px; direction: rtl; }
+        h1 { color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: right; font-size: 13px; }
+        th { background: #f1f5f9; }
+      </style>
+    </head>
+    <body>
+      <h1>🔬 تقرير مهام وتكليفات Microscope Mission</h1>
+      <p>تاريخ استخراج التقرير: ${new Date().toLocaleDateString('ar-EG')}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المهمة</th>
+            <th>اللجان</th>
+            <th>المسؤول</th>
+            <th>الأولوية</th>
+            <th>الحالة</th>
+            <th>الموعد</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); }, 500);
+}
+
+// ── Filtering ──
 function adminFilter() {
   adminSearchQuery = document.getElementById('adminSearch').value.toLowerCase();
   adminStatusFilter = document.getElementById('statusFilter').value;
   renderAdmin();
 }
 
+// ── Render ──
 function renderAdmin() {
-  let tasks = loadTasks();
+  let allTasks = loadTasks();
 
-  // Compute stats
-  document.getElementById('statTotal').textContent = tasks.length;
-  document.getElementById('statActive').textContent = tasks.filter(t => t.isActive && t.status !== 'done').length;
-  document.getElementById('statDone').textContent = tasks.filter(t => t.status === 'done').length;
-  document.getElementById('statInactive').textContent = tasks.filter(t => !t.isActive).length;
+  // Update Stats
+  document.getElementById('statTotal').textContent = allTasks.length;
+  document.getElementById('statActive').textContent = allTasks.filter(t => t.isActive && t.status !== 'done').length;
+  document.getElementById('statDone').textContent = allTasks.filter(t => t.status === 'done').length;
+  document.getElementById('statInactive').textContent = allTasks.filter(t => !t.isActive).length;
 
-  // Filter
-  if (adminStatusFilter !== 'all') tasks = tasks.filter(t => t.status === adminStatusFilter);
-  if (adminSearchQuery) tasks = tasks.filter(t =>
-    t.title.toLowerCase().includes(adminSearchQuery) ||
-    t.description.toLowerCase().includes(adminSearchQuery) ||
-    (t.headName||'').toLowerCase().includes(adminSearchQuery) ||
-    (t.committees||[]).some(c => c.toLowerCase().includes(adminSearchQuery))
-  );
-
-  const grid = document.getElementById('adminGrid');
-
-  if (tasks.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>لا توجد مهام</h3><p>ابدأ بإضافة مهمة جديدة</p></div>`;
-    return;
+  let filtered = [...allTasks];
+  if (adminStatusFilter !== 'all') filtered = filtered.filter(t => t.status === adminStatusFilter);
+  if (adminSearchQuery) {
+    filtered = filtered.filter(t =>
+      t.title.toLowerCase().includes(adminSearchQuery) ||
+      t.description.toLowerCase().includes(adminSearchQuery) ||
+      (t.headName || '').toLowerCase().includes(adminSearchQuery) ||
+      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery))
+    );
   }
 
-  const order = ['inactive','received','progress','done'];
+  // 1. Render List Grid
+  const grid = document.getElementById('adminGrid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>لا توجد مهام تطابق البحث</h3><p>ابدأ بإضافة مهمة جديدة أو تغيير معايير التصفية</p></div>';
+  } else {
+    const ord = ['inactive', 'received', 'progress', 'done'];
+    grid.innerHTML = filtered.map((task, i) => {
+      const curIdx = ord.indexOf(task.status);
+      const canAdv = task.isActive && curIdx < ord.length - 1;
+      const nextS = canAdv ? STATUSES[ord[curIdx + 1]] : null;
+      const nextBtn = nextS ? `<button class="btn btn-sm ${nextS.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">${nextS.icon} نقل إلى ${nextS.label}</button>` : '';
+      const badges = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
+      const dueBadge = task.dueDate ? `<span class="badge" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3)">📅 تسليم: ${task.dueDate}</span>` : '';
 
-  grid.innerHTML = tasks.map((task, i) => {
-    const s = STATUSES[task.status] || STATUSES.inactive;
-    const committees = (task.committees||[]).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
-    const curIdx = order.indexOf(task.status);
-    const canAdvance = task.isActive && curIdx < order.length - 1;
-
-    // Next status button
-    const nextStatus = canAdvance ? STATUSES[order[curIdx + 1]] : null;
-    const nextBtn = nextStatus
-      ? `<button class="btn btn-sm ${nextStatus.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">
-           ${nextStatus.icon} ${nextStatus.label}
-         </button>`
-      : '';
-
-    return `
-      <div class="task-admin-card status-${task.status}" id="acard-${task.id}">
-        <div class="task-number">${i + 1}</div>
-        <div class="admin-task-header">
-          <div class="admin-task-title">${task.title}</div>
-          <div>${renderBadgeStatus(task.status)}</div>
-        </div>
-        <div class="admin-task-badges">
-          ${committees}
-          ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
-          ${task.priority === 'high' ? `<span class="badge" style="background:rgba(239,68,68,0.15);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3)">🔴 أولوية عالية</span>` : ''}
-        </div>
-        <div class="admin-task-meta">${task.description}</div>
-
-        ${task.isActive ? `
-        <div class="task-timeline" style="margin:12px 0">
-          ${renderTimeline(task)}
-        </div>` : ''}
-
-        <div class="admin-actions">
-          <!-- Toggle ON/OFF -->
-          <label class="toggle-wrap">
-            <span class="toggle-label">${task.isActive ? '🟢 مفعّلة' : '⏸️ موقوفة'}</span>
-            <label class="toggle-switch">
-              <input type="checkbox" ${task.isActive ? 'checked' : ''} onchange="toggleTaskActive('${task.id}', this.checked)">
-              <div class="toggle-track"></div>
+      return `
+        <div class="task-admin-card status-${task.status}" id="acard-${task.id}">
+          <div class="task-number">${i + 1}</div>
+          <div class="admin-task-header">
+            <div class="admin-task-title">${task.title}</div>
+            <div>${renderBadgeStatus(task.status)}</div>
+          </div>
+          <div class="admin-task-badges">
+            ${badges}
+            ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
+            ${task.priority === 'high' ? '<span class="badge" style="background:rgba(239,68,68,0.15);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3)">🔴 أولوية عالية</span>' : ''}
+            ${dueBadge}
+          </div>
+          <div class="admin-task-meta">${task.description}</div>
+          ${task.isActive ? `<div class="task-timeline" style="margin:10px 0 6px">${renderTimeline(task)}</div>` : ''}
+          <div class="admin-actions">
+            <label class="toggle-wrap">
+              <span class="toggle-label">${task.isActive ? '🟢 مفعّلة' : '⏸️ موقوفة'}</span>
+              <label class="toggle-switch">
+                <input type="checkbox" ${task.isActive ? 'checked' : ''} onchange="toggleTaskActive('${task.id}', this.checked)">
+                <div class="toggle-track"></div>
+              </label>
             </label>
-          </label>
-
-          ${nextBtn}
-
-          <div style="margin-right: auto; display:flex; gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="openEditModal('${task.id}')">✏️ تعديل</button>
-            <button class="btn btn-danger btn-sm" onclick="openDeleteModal('${task.id}')">🗑️</button>
+            ${nextBtn}
+            <button class="btn btn-ghost btn-sm" onclick="openTelegramDispatcher('${task.id}')" title="تجهيز إشعار تيليجرام">📢 تيليجرام</button>
+            <div style="margin-right:auto;display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="openEditModal('${task.id}')">✏️ تعديل</button>
+              <button class="btn btn-danger btn-sm" onclick="openDeleteModal('${task.id}')">🗑️</button>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap">
+            <span>📅 أُنشئت: ${formatDate(task.createdAt)}</span>
+            ${task.timeline?.received ? `<span>📥 استُلمت: ${formatDate(task.timeline.received)}</span>` : ''}
+            ${task.timeline?.progress ? `<span>⚡ بدأت: ${formatDate(task.timeline.progress)}</span>` : ''}
+            ${task.timeline?.done ? `<span>✅ اكتملت: ${formatDate(task.timeline.done)}</span>` : ''}
           </div>
         </div>
+      `;
+    }).join('');
+  }
 
-        <div style="padding-top:10px;font-size:11px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap">
-          <span>📅 أُنشئت: ${formatDate(task.createdAt)}</span>
-          ${(task.timeline && task.timeline.received) ? `<span>📥 استُلمت: ${formatDate(task.timeline.received)}</span>` : ''}
-          ${(task.timeline && task.timeline.progress) ? `<span>⚡ بدأت: ${formatDate(task.timeline.progress)}</span>` : ''}
-          ${(task.timeline && task.timeline.done)     ? `<span>✅ اكتملت: ${formatDate(task.timeline.done)}</span>` : ''}
+  // 2. Render Kanban Board
+  const cols = { inactive: [], received: [], progress: [], done: [] };
+  filtered.forEach(t => {
+    if (cols[t.status]) cols[t.status].push(t);
+  });
+
+  Object.keys(cols).forEach(k => {
+    const colEl = document.getElementById('kCol-' + k);
+    const countEl = document.getElementById('kCount-' + k);
+    if (countEl) countEl.textContent = cols[k].length;
+    if (!colEl) return;
+
+    if (!cols[k].length) {
+      colEl.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:12px">لا توجد مهام</div>';
+      return;
+    }
+
+    colEl.innerHTML = cols[k].map(task => `
+      <div class="kanban-card" id="kcard-${task.id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="kanban-card-title">${task.title}</div>
+          ${task.priority === 'high' ? '<span style="font-size:11px;color:var(--accent-red)">🔴</span>' : ''}
         </div>
-      </div>`;
-  }).join('');
-}
-
-// ────────────────────────────────────────────────
-// SETTINGS
-// ────────────────────────────────────────────────
-function openSettings() {
-  document.getElementById('settingsModal').classList.add('open');
-}
-
-function closeSettings() {
-  document.getElementById('settingsModal').classList.remove('open');
-}
-
-function changePin() {
-  const cur = document.getElementById('currentPin').value.trim();
-  const nw  = document.getElementById('newPin').value.trim();
-  const cf  = document.getElementById('confirmPin').value.trim();
-  const currentSaved = getAdminPin();
-  
-  if (cur !== currentSaved && cur !== '7600319381') {
-    showToast('كلمة المرور الحالية غير صحيحة', 'error');
-    return;
-  }
-  if (!nw || nw.length < 4) {
-    showToast('كلمة المرور الجديدة يجب أن تكون 4 خانات على الأقل', 'error');
-    return;
-  }
-  if (nw !== cf) {
-    showToast('كلمة المرور الجديدة وتأكيدها غير متطابقين', 'error');
-    return;
-  }
-  setAdminPin(nw);
-  showToast('✅ تم تغيير كلمة المرور بنجاح!', 'success');
-  document.getElementById('currentPin').value = '';
-  document.getElementById('newPin').value = '';
-  document.getElementById('confirmPin').value = '';
-  closeSettings();
-}
-
-function clearDone() {
-  const tasks = loadTasks().filter(t => t.status !== 'done');
-  saveTasks(tasks);
-  showToast('تم حذف المهام المكتملة', 'info');
-  renderAdmin();
-  closeSettings();
+        <div class="kanban-card-desc">${task.description}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${(task.committees || []).map(c => `<span class="badge badge-committee" style="font-size:10px;padding:2px 6px">🏛 ${c}</span>`).join('')}
+        </div>
+        <div class="kanban-card-foot">
+          <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditModal('${task.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openTelegramDispatcher('${task.id}')">📢</button>
+          ${task.status !== 'done' && task.isActive ? `<button class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:11px" onclick="advanceTaskStatus('${task.id}')">تقدم ➡️</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  });
 }
 
 // Close modal on overlay click
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('open');
   }

@@ -73,6 +73,7 @@ desktop.ini
 
 # Dart compiled output
 *.js
+!web/*.js
 *.js.map
 *.js_deps
 *.snapshot

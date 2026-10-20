@@ -3,25 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MICROSCOPE MISSION — عرض المهام</title>
-  <meta name="description" content="صفحة عرض مهام MICROSCOPE MISSION — تابع حالة تنفيذ المهام الموكلة للجان">
+  <title>MICROSCOPE MISSION — شاشة عرض المهام المباشرة</title>
+  <meta name="description" content="صفحة عرض ومتابعة مهام MICROSCOPE MISSION للجان المختلفة">
   <link rel="stylesheet" href="mission.css">
   <style>
-    .priority-high { color: var(--accent-red); font-size: 12px; font-weight: 700; }
-    .priority-normal { color: var(--text-muted); font-size: 12px; }
+    .page-header { padding: 32px 0 20px; text-align: center; }
+    .page-header h2 {
+      font-family: 'Rajdhani', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal), var(--accent-amber));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-transform: uppercase;
+    }
+    .page-header p { color: var(--text-secondary); font-size: 14px; margin-top: 6px; }
+
+    .priority-high { color: var(--accent-red); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
+    .priority-normal { color: var(--text-muted); font-size: 11px; }
+
     .no-tasks-active { 
-      background: rgba(245,158,11,0.08); 
-      border: 1px solid rgba(245,158,11,0.2); 
-      border-radius: var(--radius-md); 
-      padding: 12px 18px; 
-      color: var(--accent-amber); 
-      font-size: 13px; 
-      display: flex; gap: 8px; align-items: center;
-      margin-bottom: 16px;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.22); 
+      border-radius: var(--radius-md); padding: 12px 18px; color: var(--accent-amber); 
+      font-size: 13px; display: flex; gap: 8px; align-items: center; margin: 12px 0;
     }
     .live-indicator {
       display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--accent-green);
+      font-size: 12px; color: var(--accent-green); font-weight: 700;
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+      padding: 4px 10px; border-radius: 20px;
     }
     .live-dot {
       width: 8px; height: 8px; border-radius: 50%;
@@ -29,6 +35,73 @@
       animation: pulseDot 1.5s ease-in-out infinite;
     }
     @keyframes pulseDot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
+
+    .stats-bar { display: flex; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1; min-width: 130px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 18px 16px; text-align: center;
+      position: relative; overflow: hidden; transition: all 0.3s ease;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    .stat-card.cyan::before  { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--accent-amber), #f97316); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--accent-green), #059669); }
+    .stat-card.red::before   { background: linear-gradient(90deg, var(--accent-red), #dc2626); }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .stat-number { font-family: 'Rajdhani', sans-serif; font-size: 34px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .stat-label  { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+    .filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px 18px;
+    }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      cursor: pointer; border: 1px solid var(--border-subtle); background: transparent;
+      color: var(--text-secondary); font-family: 'Cairo', sans-serif; transition: all 0.25s ease;
+    }
+    .filter-btn:hover { color: #fff; border-color: rgba(0,212,255,0.4); }
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+      color: #040914; border-color: transparent; font-weight: 800;
+    }
+
+    .tasks-grid { display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+    .task-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+      padding: 22px 24px 18px 28px; transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .task-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px; border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+    .task-card.status-inactive::before { background: var(--text-muted); }
+    .task-card.status-received::before { background: var(--accent-cyan);  box-shadow: 0 0 12px rgba(0,212,255,0.4); }
+    .task-card.status-progress::before { background: var(--accent-amber); box-shadow: 0 0 12px rgba(245,158,11,0.4); }
+    .task-card.status-done::before     { background: var(--accent-green); box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+    .task-card:hover { border-color: rgba(0,212,255,0.25); box-shadow: 0 8px 28px rgba(0,0,0,0.35); transform: translateY(-2px); }
+
+    .task-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+    .task-title { font-size: 17px; font-weight: 700; color: var(--text-primary); line-height: 1.4; }
+    .task-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .task-body { color: var(--text-secondary); font-size: 13px; line-height: 1.7; margin: 10px 0 14px; }
+    .task-footer {
+      display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;
+    }
+    .task-number {
+      position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+      background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.14);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-muted);
+    }
+
+    .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 56px; margin-bottom: 14px; opacity: 0.35; }
+    .empty-state h3 { font-size: 18px; color: var(--text-secondary); margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -41,28 +114,29 @@
         <div class="brand-icon">🔬</div>
         <div class="brand-text">
           <h1>MICROSCOPE MISSION</h1>
-          <span>Mission Control Center</span>
+          <span>Mission Live Tracking Board</span>
         </div>
       </div>
       <div class="navbar-actions">
         <div class="live-indicator">
           <div class="live-dot"></div>
-          <span>مباشر</span>
+          <span>بث مباشر لحظي</span>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="refreshView()">🔄 تحديث</button>
+        <a href="mission-admin.html" class="btn btn-ghost btn-sm">⚙️ لوحة الإدارة</a>
       </div>
     </div>
   </div>
 </nav>
 
 <!-- MAIN -->
-<main>
+<main style="padding-top:12px">
   <div class="container">
 
     <!-- PAGE HEADER -->
     <div class="page-header">
-      <h2>Mission Board</h2>
-      <p>متابعة حالة المهام الموكلة للجان — يتجدد تلقائياً</p>
+      <h2>شاشة متابعة المهام</h2>
+      <p>متابعة آنية لحالة تنفيذ المهام الموكلة للجان — تتجدد البيانات تلقائياً</p>
     </div>
 
     <!-- STATS -->
@@ -75,9 +149,8 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
-      <div class="search-input-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="ابحث في المهام..." oninput="filterTasks()">
+      <div class="search-input-wrap" style="flex:1;min-width:180px">
+        <input type="text" class="form-control" id="searchInput" placeholder="🔍 ابحث في عنوان أو تفاصيل المهمة..." oninput="filterTasks()" style="border-radius:20px;padding:7px 14px;font-size:12px">
       </div>
       <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">الكل</button>
       <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">مفعّلة</button>
@@ -92,7 +165,6 @@
   </div>
 </main>
 
-<!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="mission-data.js"></script>
@@ -114,7 +186,7 @@
 
   function refreshView() {
     renderTasks();
-    showToast('تم تحديث البيانات', 'success');
+    showToast('تم تحديث البيانات بنجاح ✅', 'success');
   }
 
   function computeStats(tasks) {
@@ -128,7 +200,7 @@
     let tasks = loadTasks();
     computeStats(tasks);
 
-    // Filter
+    // Filters
     if (currentFilter === 'active')   tasks = tasks.filter(t => t.isActive);
     if (currentFilter === 'received') tasks = tasks.filter(t => t.status === 'received');
     if (currentFilter === 'progress') tasks = tasks.filter(t => t.status === 'progress');
@@ -150,29 +222,30 @@
       grid.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📋</div>
-          <h3>لا توجد مهام</h3>
-          <p>لم يتم العثور على مهام تطابق معايير البحث</p>
+          <h3>لا توجد مهام مطابقة</h3>
+          <p>لم يتم العثور على أي مهام تطابق معايير البحث الحالية</p>
         </div>`;
       return;
     }
 
     grid.innerHTML = tasks.map((task, i) => {
-      const s = STATUSES[task.status] || STATUSES.inactive;
       const committees = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
       const priorityHtml = task.priority === 'high'
-        ? `<span class="priority-high">🔴 أولوية عالية</span>`
-        : `<span class="priority-normal">🔵 عادية</span>`;
+        ? `<span class="priority-high">🔴 أولوية عاجلة</span>`
+        : `<span class="priority-normal">🔵 أولوية عادية</span>`;
+      const dueHtml = task.dueDate ? `<span class="badge" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3)">📅 تسليم: ${task.dueDate}</span>` : '';
 
       return `
         <div class="task-card status-${task.status}" id="card-${task.id}">
           <div class="task-number">${i + 1}</div>
           <div class="task-header">
-            <div class="task-meta">
+            <div>
               <div class="task-title">${task.title}</div>
               <div class="task-badges">
                 ${committees}
                 ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
                 ${priorityHtml}
+                ${dueHtml}
               </div>
             </div>
             <div>${renderBadgeStatus(task.status)}</div>
@@ -181,25 +254,25 @@
           <div class="task-body">${task.description}</div>
 
           ${task.isActive ? `
-          <div class="task-timeline">
+          <div class="task-timeline" style="margin:10px 0 6px">
             ${renderTimeline(task)}
           </div>` : `
           <div class="no-tasks-active">
-            ⏸️ هذه المهمة غير مفعّلة بعد
+            ⏸️ هذه المهمة مسودة أو لم يتم تفعيلها بعد من الإدارة
           </div>`}
 
           <div class="task-footer">
-            <div class="task-date">📅 ${formatDate(task.createdAt)}</div>
-            ${task.updatedAt !== task.createdAt ? `<div class="task-date">🔄 ${formatDate(task.updatedAt)}</div>` : ''}
+            <div>📅 أُنشئت: ${formatDate(task.createdAt)}</div>
+            ${task.updatedAt !== task.createdAt ? `<div>🔄 آخر تحديث: ${formatDate(task.updatedAt)}</div>` : ''}
           </div>
         </div>`;
     }).join('');
   }
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 25 seconds
   seedDemo();
   renderTasks();
-  setInterval(renderTasks, 30000);
+  setInterval(renderTasks, 25000);
 </script>
 </body>
 </html>

@@ -325,6 +325,81 @@ input[type="file"]::file-selector-button:hover {
   box-shadow:0 20px 50px rgba(0,0,0,0.6);
 }
 .toast-bar.show{transform:translateY(0);opacity:1}
+
+/* ── Special Feature: National ID Intel Badge ── */
+.nid-intel-badge {
+  display: none; align-items: center; gap: 8px;
+  background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: 12px; padding: 10px 14px; font-size: 0.85rem; color: #bae6fd;
+  margin-top: 6px; animation: fadeIn .3s ease;
+}
+.nid-intel-badge.show { display: flex; }
+.nid-intel-badge.invalid {
+  background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;
+}
+
+/* ── Special Feature: Digital Membership ID Card ── */
+.digital-id-container {
+  perspective: 1000px; margin: 25px auto; max-width: 440px; width: 100%;
+}
+.digital-id-card {
+  background: linear-gradient(135deg, #091322 0%, #0d1f38 60%, #152e4d 100%);
+  border: 2px solid rgba(56, 189, 248, 0.4); border-radius: 24px; padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(14,165,233,0.25);
+  position: relative; overflow: hidden; text-align: right; direction: rtl;
+}
+.digital-id-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.digital-id-card::after {
+  content: 'MICROSCOPE'; position: absolute; right: -20px; bottom: 10px;
+  font-family: var(--font-en); font-size: 54px; font-weight: 900;
+  color: rgba(255, 255, 255, 0.03); letter-spacing: 4px; pointer-events: none;
+}
+.id-card-top {
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px; margin-bottom: 16px;
+}
+.id-brand { display: flex; align-items: center; gap: 8px; }
+.id-logo { font-size: 26px; }
+.id-brand-title { font-family: var(--font-en); font-weight: 800; font-size: 15px; color: #fff; letter-spacing: 1px; }
+.id-brand-sub { font-size: 10px; color: #38bdf8; font-weight: 700; }
+.id-chip {
+  width: 36px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
+}
+.id-card-body {
+  display: flex; gap: 16px; align-items: center; margin-bottom: 16px;
+}
+.id-avatar-wrap {
+  width: 90px; height: 90px; border-radius: 18px; border: 2px solid #38bdf8;
+  overflow: hidden; flex-shrink: 0; box-shadow: 0 0 20px rgba(56,189,248,0.4);
+}
+.id-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.id-member-info { flex: 1; }
+.id-name-ar { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+.id-name-en { font-family: var(--font-en); font-size: 13px; color: #94a3b8; font-weight: 600; margin-bottom: 8px; }
+.id-badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.id-badge {
+  background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+}
+.id-badge.role {
+  background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); color: #fde68a;
+}
+.id-card-foot {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;
+}
+.id-code-lbl { font-size: 9px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+.id-code-val { font-family: monospace; font-size: 13px; color: #38bdf8; font-weight: 700; letter-spacing: 1px; }
+.id-barcode { display: flex; gap: 2px; height: 26px; align-items: flex-end; }
+.bar-line { width: 2px; height: 100%; background: #94a3b8; }
+.bar-line.thin { width: 1px; }
+.bar-line.thick { width: 3px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -372,7 +447,8 @@ input[type="file"]::file-selector-button:hover {
 
   <div class="form-group">
     <label for="nationalId">الرقم القومي <span class="req">*</span></label>
-    <input type="text" id="nationalId" placeholder="14 رقم" pattern="[0-9]{14}" required>
+    <input type="text" id="nationalId" placeholder="14 رقم" pattern="[0-9]{14}" required oninput="onNationalIdInput(this.value)">
+    <div id="nidIntelBox" class="nid-intel-badge"></div>
   </div>
   
   <div class="form-group">
@@ -472,34 +548,151 @@ input[type="file"]::file-selector-button:hover {
 </div>
 
 <!-- ── Success Message ───────────────────────────────────────────────────── -->
-<div id="successMessage" class="form-card" style="display: none; text-align: center; padding: 45px 25px; max-width: 520px; margin: 30px auto; border-radius: 20px;">
-  <div style="font-size: 3.8rem; margin-bottom: 12px;">✅</div>
-  <h2 style="color: #10b981; font-size: 1.85rem; margin-bottom: 8px; font-weight: 800;">تم حفظ البيانات بنجاح!</h2>
-  <p style="color: var(--dim); font-size: 1.05rem; line-height: 1.6; margin: 0 0 28px 0;">شكراً لك، لقد تم تسجيل بياناتك بنجاح في النظام وحفظها على Google Drive.</p>
+<div id="successMessage" class="form-card" style="display: none; text-align: center; padding: 40px 24px; max-width: 540px; margin: 30px auto; border-radius: 24px;">
+  <div style="font-size: 3.5rem; margin-bottom: 8px;">🎉</div>
+  <h2 style="color: #10b981; font-size: 1.85rem; margin-bottom: 6px; font-weight: 800;">تم تسجيل عضويتك بنجاح!</h2>
+  <p style="color: var(--dim); font-size: 1rem; line-height: 1.6; margin: 0 0 20px 0;">أهلاً بك في Microscope Team! تم إنشاء كارنيه العضوية الرقمي الرسمي الخاص بك:</p>
 
-  <!-- Add Another Registration button -->
-  <button
-    id="addAnotherBtn"
-    onclick="resetFormForAnother()"
-    style="
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 16px 32px; border-radius: 14px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #fff; border: none; cursor: pointer;
-      font-family: var(--font-ar); font-size: 1.1rem; font-weight: 800;
-      box-shadow: 0 8px 20px rgba(16,185,129,0.4);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    "
-    onmouseover="this.style.transform='translateY(-3px) scale(1.03)';this.style.boxShadow='0 12px 28px rgba(16,185,129,0.55)'"
-    onmouseout="this.style.transform='';this.style.boxShadow='0 8px 20px rgba(16,185,129,0.4)'"
-  >
-    📝 تسجيل عضو آخر
-  </button>
+  <!-- Special Feature: 3D Holographic Member ID Card -->
+  <div class="digital-id-container">
+    <div class="digital-id-card" id="digitalIdCard">
+      <div class="id-card-top">
+        <div class="id-brand">
+          <span class="id-logo">🔬</span>
+          <div>
+            <div class="id-brand-title">MICROSCOPE TEAM</div>
+            <div class="id-brand-sub">OFFICIAL MEMBER ID CARD</div>
+          </div>
+        </div>
+        <div class="id-chip"></div>
+      </div>
+      <div class="id-card-body">
+        <div class="id-avatar-wrap">
+          <img id="cardAvatar" src="" alt="Member">
+        </div>
+        <div class="id-member-info">
+          <div class="id-name-ar" id="cardNameAr">—</div>
+          <div class="id-name-en" id="cardNameEn">—</div>
+          <div class="id-badge-row">
+            <span class="id-badge" id="cardCommittee">Committee</span>
+            <span class="id-badge role" id="cardRole">Member</span>
+            <span class="id-badge" id="cardGov">Gov</span>
+          </div>
+        </div>
+      </div>
+      <div class="id-card-foot">
+        <div>
+          <div class="id-code-lbl">MEMBER CODE</div>
+          <div class="id-code-val" id="cardMemberCode">MIC-2026-0000</div>
+        </div>
+        <div class="id-barcode">
+          <div class="bar-line thick"></div><div class="bar-line thin"></div><div class="bar-line"></div>
+          <div class="bar-line thick"></div><div class="bar-line"></div><div class="bar-line thin"></div>
+          <div class="bar-line thick"></div><div class="bar-line"></div><div class="bar-line thin"></div>
+          <div class="bar-line thick"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+    <button type="button" class="btn-submit" onclick="downloadIdCard()" style="margin-top:0;padding:12px 24px;font-size:1.05rem;background:linear-gradient(135deg,#0284c7,#0ea5e9);box-shadow:0 8px 25px rgba(14,165,233,0.4)">
+      📥 تحميل كارنيه العضوية (PNG)
+    </button>
+    <button type="button" id="addAnotherBtn" onclick="resetFormForAnother()" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:14px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);cursor:pointer;font-family:var(--font-ar);font-size:1rem;font-weight:700">
+      📝 تسجيل عضو آخر
+    </button>
+  </div>
 </div>
 
 <div class="toast-bar" id="toast">✅ تم حفظ البيانات بنجاح!</div>
 
 <script>
+// ── Egyptian National ID Auto-Intelligence ──
+const GOV_CODES = {
+  '01': 'القاهرة', '02': 'الإسكندرية', '03': 'بورسعيد', '04': 'السويس',
+  '11': 'دمياط', '12': 'الدقهلية', '13': 'الشرقية', '14': 'القليوبية',
+  '15': 'كفر الشيخ', '16': 'الغربية', '17': 'المنوفية', '18': 'البحيرة',
+  '19': 'الإسماعيلية', '21': 'الجيزة', '22': 'بني سويف', '23': 'الفيوم',
+  '24': 'المنيا', '25': 'أسيوط', '26': 'سوهاج', '27': 'قنا',
+  '28': 'أسوان', '29': 'الأقصر', '31': 'البحر الأحمر', '32': 'الوادي الجديد',
+  '33': 'مطروح', '34': 'شمال سيناء', '35': 'جنوب سيناء', '88': 'خارج مصر'
+};
+let currentMemberGov = 'مصر';
+
+function onNationalIdInput(val) {
+  const clean = String(val).replace(/\D/g, '');
+  const box = document.getElementById('nidIntelBox');
+  if (!box) return;
+
+  if (clean.length === 0) {
+    box.className = 'nid-intel-badge';
+    box.style.display = 'none';
+    return;
+  }
+  if (clean.length < 14) {
+    box.className = 'nid-intel-badge show';
+    box.style.display = 'flex';
+    box.innerHTML = `<span>⏳ إدخال الرقم القومي (${clean.length}/14 رقم)...</span>`;
+    return;
+  }
+  if (clean.length === 14) {
+    const centuryDigit = parseInt(clean[0], 10);
+    if (centuryDigit !== 2 && centuryDigit !== 3) {
+      box.className = 'nid-intel-badge show invalid';
+      box.style.display = 'flex';
+      box.innerHTML = '<span>❌ رقم قومي غير صالح (يجب أن يبدأ بـ 2 أو 3).</span>';
+      return;
+    }
+    const yearPrefix = centuryDigit === 2 ? '19' : '20';
+    const year = yearPrefix + clean.substring(1, 3);
+    const month = clean.substring(3, 5);
+    const day = clean.substring(5, 7);
+    const govCode = clean.substring(7, 9);
+    const genderDigit = parseInt(clean[12], 10);
+    const gender = genderDigit % 2 !== 0 ? 'ذكر 👨' : 'أنثى 👩';
+    const govName = GOV_CODES[govCode] || 'محافظة مصرية';
+    currentMemberGov = govName;
+
+    const mNum = parseInt(month, 10);
+    const dNum = parseInt(day, 10);
+    if (mNum < 1 || mNum > 12 || dNum < 1 || dNum > 31) {
+      box.className = 'nid-intel-badge show invalid';
+      box.style.display = 'flex';
+      box.innerHTML = '<span>❌ تاريخ الميلاد في الرقم القومي غير سليم.</span>';
+      return;
+    }
+    const birthDateStr = `${year}-${month}-${day}`;
+    const birthDateInput = document.getElementById('birthDate');
+    if (birthDateInput) {
+      birthDateInput.value = birthDateStr;
+    }
+    box.className = 'nid-intel-badge show';
+    box.style.display = 'flex';
+    box.innerHTML = `<span>✨ <strong>تم التحقق بنجاح:</strong> ${govName} • ${gender} • تاريخ الميلاد: ${birthDateStr}</span>`;
+  }
+}
+
+// ── Download ID Card ──
+async function downloadIdCard() {
+  const card = document.getElementById('digitalIdCard');
+  if (!card) return;
+  try {
+    const canvas = await html2canvas(card, {
+      scale: 3,
+      useCORS: true,
+      backgroundColor: '#091322'
+    });
+    const link = document.createElement('a');
+    link.download = `Microscope_Member_${document.getElementById('cardNameAr').textContent.trim().replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (err) {
+    console.error('Error downloading card:', err);
+    alert('حدث خطأ أثناء تحميل الكارنيه، يمكنك أخذ لقطة شاشة للبطاقة.');
+  }
+}
+
 // ── Reset / "Add Another Registration" ──────────────────────────────────────
 function resetFormForAnother() {
   // Hide success, show form
@@ -612,6 +805,22 @@ document.getElementById('memberForm').addEventListener('submit', function(e) {
       facebook: document.getElementById('facebook').value.trim(),
       timestamp: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })
     };
+
+    // ── Populate and Show Digital Member ID Card ──────────────────────────
+    const cardAv = document.getElementById('cardAvatar');
+    if (cardAv) cardAv.src = base64String;
+    const cAr = document.getElementById('cardNameAr');
+    if (cAr) cAr.textContent = memberData.fullName;
+    const cEn = document.getElementById('cardNameEn');
+    if (cEn) cEn.textContent = memberData.fullNameEn || memberData.fullName;
+    const cCom = document.getElementById('cardCommittee');
+    if (cCom) cCom.textContent = memberData.committee;
+    const cRol = document.getElementById('cardRole');
+    if (cRol) cRol.textContent = memberData.role === 'Head' ? '👑 رئيس لجنة (Head)' : 'عضو (Member)';
+    const cGov = document.getElementById('cardGov');
+    if (cGov) cGov.textContent = currentMemberGov || 'عضو معتمد';
+    const cCode = document.getElementById('cardMemberCode');
+    if (cCode) cCode.textContent = `MIC-2026-${memberId.slice(-4)}`;
 
     // ── Show success message immediately ──────────────────────────────────
     document.getElementById('memberForm').style.display = 'none';

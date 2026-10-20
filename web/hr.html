@@ -6,6 +6,7 @@
 <title>🏢 نظام تقييم HR — Microscope</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1169,6 +1170,88 @@ function statusBadge(status) {
 }
 
 /* ═══════════════════════════════════════════════
+   Special Feature: HR Official Certificate Generator
+═══════════════════════════════════════════════ */
+const HRCertificate = {
+  openForEval(id, name, committee, score, level) {
+    const certId = 'CERT-' + (id || Date.now()).toString().slice(-6).toUpperCase();
+    const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+    const scoreVal = typeof score === 'number' ? score.toFixed(1) : (score || '100');
+    const levelStr = level || 'أداء استثنائي ومتميز';
+
+    const html = `
+      <div id="hr-cert-print-area" style="
+        background: linear-gradient(135deg, #091322 0%, #0d1e38 50%, #040a17 100%);
+        border: 4px solid #f59e0b; border-radius: 20px; padding: 32px 24px;
+        color: #fff; text-align: center; direction: rtl; position: relative; overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 50px rgba(245, 158, 11, 0.15);
+      ">
+        <div style="position:absolute;top:12px;left:14px;font-family:monospace;font-size:10px;color:rgba(255,255,255,0.4)">${certId}</div>
+        <div style="font-size: 2.8rem; margin-bottom: 4px;">🏆</div>
+        <div style="font-size: 0.85rem; letter-spacing: 2px; color: #f59e0b; font-weight: 800; text-transform: uppercase;">
+          MICROSCOPE HUMAN RESOURCES DEPARTMENT
+        </div>
+        <h2 style="font-size: 1.85rem; font-weight: 900; margin: 6px 0 14px; background: linear-gradient(135deg, #fef08a, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          شهادة تقدير وتميز رسمي
+        </h2>
+        <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 14px; line-height: 1.7;">
+          تتقدم إدارة الموارد البشرية ومنظومة <strong>MICROSCOPE</strong> ببالغ الفخر والتقدير إلى:
+        </p>
+        <div style="font-size: 1.65rem; font-weight: 900; color: #38bdf8; padding: 6px 20px; margin: 8px auto; border-bottom: 2px solid rgba(56, 189, 248, 0.5); display: inline-block;">
+          ${name}
+        </div>
+        <div style="font-size: 0.95rem; color: #94a3b8; margin-top: 6px; font-weight: 700;">
+          لجنة: <span style="color: #fff">${committee || 'أعضاء الفريق'}</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin: 14px auto; max-width: 480px; line-height: 1.7;">
+          تقديراً لإسهاماته الفعالة، والتزامه الاستثنائي بالمسؤوليات الموكلة إليه، وتحقيقه مرتبة شرف وأداء متفوق.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 16px; margin: 18px 0; flex-wrap: wrap;">
+          <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px 18px;">
+            <div style="font-size: 0.72rem; color: #94a3b8;">الدرجة النهائية</div>
+            <div style="font-size: 1.25rem; font-weight: 900; color: #38bdf8;">${scoreVal} / 100</div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 8px 18px;">
+            <div style="font-size: 0.72rem; color: #fde68a;">مستوى الأداء</div>
+            <div style="font-size: 1.25rem; font-weight: 900; color: #f59e0b;">${levelStr}</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; margin-top: 16px; font-size: 0.8rem; color: #64748b;">
+          <div>📅 تاريخ الإصدار: <span style="color:#cbd5e1">${dateStr}</span></div>
+          <div style="text-align: left; font-weight: 700; color: #f59e0b;">
+            ختم الاعتماد الرسمي 🔬<br>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Microscope HR Board</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="HRCertificate.downloadPng('${name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_')}')">📥 تحميل الشهادة (PNG)</button>
+        <button class="btn btn-ghost" onclick="window.print()">🖨️ طباعة</button>
+      </div>
+    `;
+
+    Modal.open('🏆 شهادة التقدير والتميز الرسمية', html, 'إغلاق', false, true);
+  },
+
+  async downloadPng(cleanName) {
+    const el = document.getElementById('hr-cert-print-area');
+    if (!el) return;
+    try {
+      Toast.show('جاري استخراج الشهادة بدقة عالية...', 'info');
+      const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#091322' });
+      const a = document.createElement('a');
+      a.download = `Certificate_${cleanName || 'Member'}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      Toast.show('تم تحميل الشهادة بنجاح! 🏆', 'success');
+    } catch(err) {
+      console.error(err);
+      Toast.show('حدث خطأ أثناء استخراج الشهادة', 'error');
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════
    Pages — HR Dashboard
 ═══════════════════════════════════════════════ */
 const Pages = {
@@ -1415,6 +1498,21 @@ const Pages = {
         ${this._renderEvalReadonly(evalDoc, criteria, bonusRules, penaltyRules)}
         ` : `
         <form id="eval-form" onsubmit="return false">
+          <!-- Quick Evaluation Presets (Special Feature) -->
+          <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(139,92,246,0.1));border:1px solid rgba(59,130,246,0.3)">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+              <div>
+                <div style="font-weight:800;font-size:.95rem;color:#93c5fd">⚡ قوالب التقييم السريع الذكية</div>
+                <div style="font-size:.78rem;color:var(--dim)">تطبيق تقييم مسبق بضغطة زر وتعبئة الملاحظات تلقائياً:</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="btn btn-sm" onclick="Pages['hr-evaluate'].applyPreset('star')" style="background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff">⭐ أداء استثنائي (5/5)</button>
+                <button type="button" class="btn btn-sm" onclick="Pages['hr-evaluate'].applyPreset('good')" style="background:linear-gradient(135deg,#10b981,#0284c7);color:#fff">👍 متميز وملتزم (4/5)</button>
+                <button type="button" class="btn btn-sm" onclick="Pages['hr-evaluate'].applyPreset('needs_work')" style="background:rgba(255,255,255,0.08);color:var(--text)">📈 يحتاج متابعة (3/5)</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Criteria -->
           <div class="card" style="margin-bottom:16px">
             <div class="sec-head" style="margin-bottom:14px"><h2 style="font-size:.95rem">📐 معايير التقييم</h2></div>
@@ -1696,6 +1794,9 @@ const Pages = {
           </div>`).join('')}
         </div>
         ${evalDoc.overallNote ? `<div class="card" style="margin-top:12px"><strong>ملاحظة عامة:</strong><div style="color:var(--dim);margin-top:6px">${encStr(evalDoc.overallNote)}</div></div>` : ''}
+        <div style="text-align:center;margin-top:16px">
+          <button class="btn btn-primary btn-sm" onclick="HRCertificate.openForEval('${evalDoc.id||''}','${encStr(evalDoc.memberName||'عضو الفريق')}','${encStr(evalDoc.committee||'اللجنة')}',${evalDoc.finalScore||0},'${encStr(evalDoc.levelName||'')}')">🏆 إصدار شهادة تقدير وتميز رسمية</button>
+        </div>
         <div style="color:var(--muted);font-size:.78rem;margin-top:10px;text-align:center">أُرسل في: ${fmtDatetime(evalDoc.submittedAt)}</div>
       `;
     },
@@ -1704,6 +1805,36 @@ const Pages = {
       this._selectedMember = null;
       this._cycleId = null;
       App.setSection('hr-evaluate');
+    },
+
+    applyPreset(type) {
+      const criteria = (this._snapshot?.criteria || []).filter(c => c.active !== false);
+      const pg = document.getElementById('content');
+      const noteEl = document.getElementById('overall-note');
+
+      if (type === 'star') {
+        criteria.forEach(c => {
+          this._scores[c.id] = { rating: 5, evaluator: HRAuth.name };
+          pg.querySelectorAll(`.rating-btn[data-cid="${c.id}"]`).forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === 5));
+        });
+        if (noteEl) noteEl.value = 'عضو متميز ومبادر جداً، أظهر التزاماً استثنائياً بالمواعيد وجودة عالية في تنفيذ المهام والعمل الجماعي.';
+        Toast.show('تم تطبيق قالب: أداء استثنائي (5/5) ⭐', 'success');
+      } else if (type === 'good') {
+        criteria.forEach(c => {
+          this._scores[c.id] = { rating: 4, evaluator: HRAuth.name };
+          pg.querySelectorAll(`.rating-btn[data-cid="${c.id}"]`).forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === 4));
+        });
+        if (noteEl) noteEl.value = 'عضو ملتزم ومتعاون، يؤدي المهام المطلوبة بدقة وفي المواعيد المحددة مع مستوى تواصل فعال.';
+        Toast.show('تم تطبيق قالب: متميز وملتزم (4/5) 👍', 'info');
+      } else if (type === 'needs_work') {
+        criteria.forEach(c => {
+          this._scores[c.id] = { rating: 3, evaluator: HRAuth.name };
+          pg.querySelectorAll(`.rating-btn[data-cid="${c.id}"]`).forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === 3));
+        });
+        if (noteEl) noteEl.value = 'يحتاج لمزيد من التركيز على سرعة التسليم والمبادرة في النقاشات والأنشطة الجماعية.';
+        Toast.show('تم تطبيق قالب: يحتاج متابعة (3/5) 📈', 'warn');
+      }
+      this.previewScore();
     },
 
     _buildSubmitPayload() {
@@ -2536,6 +2667,7 @@ const Pages = {
                   <td>${statusBadge(e.status)}</td>
                   <td style="font-size:.8rem">${fmtDate(e.submittedAt)}</td>
                   <td>
+                    <button class="btn btn-ghost btn-xs" onclick="HRCertificate.openForEval('${e.id}', '${encStr(e.memberName||e.memberId)}', '${encStr(e.committee||'')}', ${e.finalScore||0}, '${encStr(e.levelName||'')}')" title="إصدار شهادة تقدير">🏆 شهادة</button>
                     ${e.status === 'submitted' && (HRAuth.isHead()) ? `
                     <button class="btn btn-warning btn-xs" onclick="Pages['evaluations-list'].reopenModal('${e.id}')">🔓 إعادة فتح</button>` : ''}
                   </td>
