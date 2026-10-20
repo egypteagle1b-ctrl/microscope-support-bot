@@ -151,13 +151,15 @@
         <input type="password" id="adminPasswordInput" class="form-control"
                placeholder="أدخل كلمة المرور أو رمز الأدمن..."
                style="text-align:center;font-size:16px;letter-spacing:2px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600"
-               autofocus autocomplete="current-password">
+               autofocus autocomplete="current-password"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}">
         <button type="button"
                 style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px"
+                onclick="togglePassVisibility()"
                 id="togglePassBtn" title="إظهار / إخفاء">👁️</button>
       </div>
       <div id="pinError" style="margin-bottom:14px;font-size:13px;font-weight:600;min-height:20px;color:var(--accent-red);line-height:1.4"></div>
-      <button type="button" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700;box-shadow:0 4px 18px rgba(6,182,212,0.35);cursor:pointer">🔓 تسجيل الدخول</button>
+      <button type="button" id="loginSubmitBtn" onclick="doLogin()" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700;box-shadow:0 4px 18px rgba(6,182,212,0.35);cursor:pointer">🔓 تسجيل الدخول</button>
     </div>
 
     <div style="margin-top:20px">
@@ -434,12 +436,7 @@ function logout() {
   if (input) { input.value = ''; input.focus(); }
 }
 
-// ربط الأحداث بشكل صحيح
-document.getElementById('loginSubmitBtn').addEventListener('click', doLogin);
-document.getElementById('adminPasswordInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
-});
-document.getElementById('togglePassBtn').addEventListener('click', togglePassVisibility);
+// الأحداث مربوطة مباشرة في HTML (onclick / onkeydown)
 
 // ────────────────────────────────────────────────
 // LINKS
