@@ -341,11 +341,20 @@
         </div></div>
         <div class="form-row">
           <div class="form-group">
-            <label><span class="required">*</span> اللجان المعنية</label>
-            <div class="tags-input-wrapper" id="committeesWrapper" onclick="document.getElementById('committeeInput').focus()">
-              <input type="text" class="tags-input" id="committeeInput" placeholder="اكتب اسم اللجنة واضغط Enter..." onkeydown="addCommittee(event)">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="margin:0;"><span class="required">*</span> اللجان المعنية</label>
+              <span id="selectedCommitteesCount" style="font-size:11px;color:var(--accent-cyan);font-weight:700;"></span>
             </div>
-            <span style="font-size:11px;color:var(--text-muted)">اضغط Enter أو فاصلة لإضافة لجنة (مثل: IT, HR, PR)</span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <div class="tags-input-wrapper" id="committeesWrapper" style="flex:1;" onclick="document.getElementById('committeeInput').focus()">
+                <input type="text" class="tags-input" id="committeeInput" placeholder="اكتب اسم اللجنة واضغط Enter أو زر إضافة..." onkeydown="handleCommitteeKey(event)" onblur="commitCommitteeInput()">
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="commitCommitteeInput()" style="height:42px;padding:0 12px;border-color:rgba(0,212,255,0.4);color:var(--accent-cyan);white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                ➕ إضافة
+              </button>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted);margin-top:2px;">💡 اضغط Enter أو زر إضافة، أو اختر مباشرة بضغطة واحدة من اللجان المقترحة:</span>
+            <div class="committee-quick-chips" id="quickCommitteesList"></div>
           </div>
           <div class="form-group">
             <label>المسؤول / رئيس اللجنة</label>
@@ -474,37 +483,102 @@ function switchViewMode(mode) {
   renderAdmin();
 }
 
-// ── Tags Management ──
-function addCommittee(e) {
-  if (e.key === 'Enter' || e.key === ',') {
-    e.preventDefault();
-    const v = e.target.value.trim();
-    if (v && !committees.includes(v)) {
-      committees.push(v);
-      renderTags();
+// ── Preset Committees for Quick Selection ──
+const PRESET_COMMITTEES = [
+  'HR',
+  'PR',
+  'PM',
+  'Scientific',
+  'Social Media',
+  'Charity',
+  'IT & Tech',
+  'Logistics',
+  'جميع اللجان'
+];
+
+// ── Tags Management & Auto-Commit ──
+function commitCommitteeInput() {
+  const inp = document.getElementById('committeeInput');
+  if (!inp) return false;
+  const raw = inp.value.trim();
+  if (!raw) return false;
+
+  const items = raw.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean);
+  let added = false;
+  items.forEach(item => {
+    if (item && !committees.includes(item)) {
+      committees.push(item);
+      added = true;
     }
-    e.target.value = '';
+  });
+
+  inp.value = '';
+  renderTags();
+  return added;
+}
+
+function handleCommitteeKey(e) {
+  if (e.key === 'Enter' || e.keyCode === 13 || e.key === ',' || e.key === '،' || e.key === 'Tab') {
+    e.preventDefault();
+    commitCommitteeInput();
   }
 }
+
+// التوافقية مع أي استدعاء
+function addCommittee(e) {
+  handleCommitteeKey(e);
+}
+
+function toggleCommitteeChip(name) {
+  if (committees.includes(name)) {
+    removeCommittee(name);
+  } else {
+    committees.push(name);
+    renderTags();
+  }
+}
+
 function removeCommittee(n) {
   committees = committees.filter(c => c !== n);
   renderTags();
 }
+
+function renderQuickChips() {
+  const box = document.getElementById('quickCommitteesList');
+  if (!box) return;
+  box.innerHTML = PRESET_COMMITTEES.map(name => {
+    const isSel = committees.includes(name);
+    return `<button type="button" class="committee-chip-btn ${isSel ? 'active' : ''}" onclick="toggleCommitteeChip('${name}')">
+      ${isSel ? '✓' : '+'} ${name}
+    </button>`;
+  }).join('');
+}
+
 function renderTags() {
   const w = document.getElementById('committeesWrapper');
   const inp = document.getElementById('committeeInput');
+  if (!w || !inp) return;
   w.querySelectorAll('.tag-item').forEach(t => t.remove());
   committees.forEach(c => {
     const t = document.createElement('div');
     t.className = 'tag-item';
-    t.innerHTML = `${c}<button class="tag-remove" type="button" onclick="removeCommittee('${c.replace(/'/g, "\\'")}')">✕</button>`;
+    t.innerHTML = `<span>${c}</span><button class="tag-remove" type="button" onclick="removeCommittee('${c.replace(/'/g, "\\'")}')" title="حذف">✕</button>`;
     w.insertBefore(t, inp);
   });
+
+  renderQuickChips();
+
+  const countBadge = document.getElementById('selectedCommitteesCount');
+  if (countBadge) {
+    countBadge.textContent = committees.length ? `(${committees.length} محددة)` : '';
+  }
 }
 
 // ── Modals Management ──
 function openAddModal() {
   committees = [];
+  const inp = document.getElementById('committeeInput');
+  if (inp) inp.value = '';
   renderTags();
   document.getElementById('taskForm').reset();
   document.getElementById('editingId').value = '';
@@ -517,6 +591,8 @@ function openEditModal(id) {
   const t = getTask(id);
   if (!t) return;
   committees = [...(t.committees || [])];
+  const inp = document.getElementById('committeeInput');
+  if (inp) inp.value = '';
   renderTags();
   document.getElementById('editingId').value = id;
   document.getElementById('fTitle').value = t.title;
@@ -535,10 +611,22 @@ function closeModal() {
 
 function saveTask(e) {
   e.preventDefault();
+  
+  // خطوة أساسية: تثبيت أي نص مكتوب في حقل اللجنة حالياً قبل التحقق
+  commitCommitteeInput();
+
   if (!committees.length) {
-    showToast('يرجى إضافة لجنة واحدة على الأقل', 'error');
+    showToast('يرجى إضافة أو اختيار لجنة واحدة على الأقل 🏛', 'error');
+    const w = document.getElementById('committeesWrapper');
+    if (w) {
+      w.style.borderColor = 'var(--accent-red)';
+      setTimeout(() => { w.style.borderColor = ''; }, 2500);
+    }
+    const inp = document.getElementById('committeeInput');
+    if (inp) inp.focus();
     return;
   }
+
   const data = {
     title: document.getElementById('fTitle').value.trim(),
     description: document.getElementById('fDesc').value.trim(),
