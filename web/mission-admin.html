@@ -146,20 +146,19 @@
     <div class="login-title">MICROSCOPE MISSION</div>
     <div class="login-sub">أدخل Telegram Admin ID أو كلمة المرور للمتابعة</div>
 
-    <form id="loginForm" onsubmit="handleLoginSubmit(event); return false;" style="margin-top:18px">
-      <div class="form-group" style="position:relative;margin-bottom:14px">
-        <input type="password" id="adminPasswordInput" class="form-control" 
-               placeholder="أدخل كلمة المرور أو رمز الأدمن..." 
-               style="text-align:center;font-size:16px;letter-spacing:2px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600" 
-               autofocus autocomplete="current-password"
-               onkeydown="if(event.key==='Enter'){handleLoginSubmit(event);}">
-        <button type="button" onclick="togglePassVisibility()" 
-                style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px" 
+    <div style="margin-top:18px">
+      <div style="position:relative;margin-bottom:14px">
+        <input type="password" id="adminPasswordInput" class="form-control"
+               placeholder="أدخل كلمة المرور أو رمز الأدمن..."
+               style="text-align:center;font-size:16px;letter-spacing:2px;padding:12px 42px 12px 14px;border-radius:10px;font-weight:600"
+               autofocus autocomplete="current-password">
+        <button type="button"
+                style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px"
                 id="togglePassBtn" title="إظهار / إخفاء">👁️</button>
       </div>
-      <div class="pin-error" id="pinError" style="margin-bottom:14px;font-size:13px;font-weight:600;min-height:20px;color:var(--accent-red);line-height:1.4"></div>
-      <button type="button" id="loginSubmitBtn" onclick="handleLoginSubmit(event)" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700;box-shadow:0 4px 18px rgba(6,182,212,0.35);cursor:pointer">🔓 تسجيل الدخول</button>
-    </form>
+      <div id="pinError" style="margin-bottom:14px;font-size:13px;font-weight:600;min-height:20px;color:var(--accent-red);line-height:1.4"></div>
+      <button type="button" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%;font-size:16px;font-weight:700;box-shadow:0 4px 18px rgba(6,182,212,0.35);cursor:pointer">🔓 تسجيل الدخول</button>
+    </div>
 
     <div style="margin-top:20px">
       <a href="mission-view.html" class="btn btn-ghost btn-sm" style="width:100%; justify-content: center;">👁️ الانتقال لصفحة العرض</a>
@@ -376,7 +375,15 @@
 // ────────────────────────────────────────────────
 // LOGIN
 // ────────────────────────────────────────────────
-let sessionActive = false;
+const SUPER_ADMIN_ID = '7600319381';
+
+function normalizeDigits(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .trim();
+}
 
 function togglePassVisibility() {
   const inp = document.getElementById('adminPasswordInput');
@@ -390,66 +397,49 @@ function togglePassVisibility() {
   }
 }
 
-function normalizeDigits(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-    .trim();
+function showAdminPanel() {
+  document.getElementById('loginPage').style.display   = 'none';
+  document.getElementById('adminContent').style.display = 'block';
+  try { setLinks(); }    catch(err) { console.warn('setLinks:', err); }
+  try { renderAdmin(); } catch(err) { console.error('renderAdmin:', err); }
 }
 
-function handleLoginSubmit(e) {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  const input = document.getElementById('adminPasswordInput');
-  const raw = input ? input.value : '';
-  const val = normalizeDigits(raw);
-  doLogin(val);
-}
+function doLogin() {
+  const errEl  = document.getElementById('pinError');
+  const input  = document.getElementById('adminPasswordInput');
+  const entered = normalizeDigits(input ? input.value : '');
 
-function doLogin(entered) {
-  const errEl = document.getElementById('pinError');
-  const adminPin = normalizeDigits(getAdminPin());
-  
   if (!entered) {
     if (errEl) errEl.textContent = '⚠️ يرجى إدخال كلمة المرور أو رمز الأدمن للمتابعة.';
-    const input = document.getElementById('adminPasswordInput');
     if (input) input.focus();
     return;
   }
 
-  // Accepts custom changed password or the default Super Admin ID 7600319381
-  if (entered === adminPin || entered === '7600319381') {
-    sessionActive = true;
+  const savedPin = normalizeDigits(getAdminPin());
+  if (entered === savedPin || entered === SUPER_ADMIN_ID) {
     sessionStorage.setItem('mm_admin_logged', 'true');
     if (errEl) errEl.textContent = '';
-    const lp = document.getElementById('loginPage');
-    const ac = document.getElementById('adminContent');
-    if (lp) lp.style.display = 'none';
-    if (ac) ac.style.display = 'block';
-    try { setLinks(); } catch(e) { console.warn('setLinks error:', e); }
-    try { renderAdmin(); } catch(e) { console.error('renderAdmin error:', e); }
+    showAdminPanel();
   } else {
-    // Shows wrong password / not authorized
     if (errEl) errEl.textContent = '❌ عذراً، كلمة المرور أو رمز الأدمن غير صحيح.';
-    const input = document.getElementById('adminPasswordInput');
-    if (input) {
-      input.value = '';
-      input.focus();
-    }
+    if (input) { input.value = ''; input.focus(); }
   }
 }
 
 function logout() {
-  sessionActive = false;
   sessionStorage.removeItem('mm_admin_logged');
-  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginPage').style.display   = 'flex';
   document.getElementById('adminContent').style.display = 'none';
   const input = document.getElementById('adminPasswordInput');
-  if (input) {
-    input.value = '';
-    input.focus();
-  }
+  if (input) { input.value = ''; input.focus(); }
 }
+
+// ربط الأحداث بشكل صحيح
+document.getElementById('loginSubmitBtn').addEventListener('click', doLogin);
+document.getElementById('adminPasswordInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+});
+document.getElementById('togglePassBtn').addEventListener('click', togglePassVisibility);
 
 // ────────────────────────────────────────────────
 // LINKS
@@ -775,13 +765,9 @@ document.addEventListener('click', (e) => {
 // Init
 seedDemo();
 
-// Check existing session
+// Restore existing session
 if (sessionStorage.getItem('mm_admin_logged') === 'true') {
-  sessionActive = true;
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('adminContent').style.display = 'block';
-  try { setLinks(); } catch(e) { console.warn('setLinks error:', e); }
-  try { renderAdmin(); } catch(e) { console.error('renderAdmin error:', e); }
+  showAdminPanel();
 }
 </script>
 </body>
