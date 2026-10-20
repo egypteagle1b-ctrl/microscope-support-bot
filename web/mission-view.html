@@ -149,11 +149,20 @@
 
     <!-- FILTER BAR -->
     <div class="filter-bar">
+      <!-- Category Filter Tabs -->
+      <div class="category-filter-wrap">
+        <button class="cat-btn active" data-cat="all" onclick="setCategory('all', this)">🌐 جميع الأقسام</button>
+        <button class="cat-btn" data-cat="timeline" onclick="setCategory('timeline', this)">📅 المراحل الزمنية</button>
+        <button class="cat-btn" data-cat="term2" onclick="setCategory('term2', this)">🎯 خطة الترم الثاني</button>
+        <button class="cat-btn" data-cat="execution" onclick="setCategory('execution', this)">⚡ آلية التنفيذ</button>
+        <button class="cat-btn" data-cat="improvement" onclick="setCategory('improvement', this)">💡 التطوير المؤسسي</button>
+      </div>
+
       <div class="search-input-wrap" style="flex:1;min-width:180px">
-        <input type="text" class="form-control" id="searchInput" placeholder="🔍 ابحث في عنوان أو تفاصيل المهمة..." oninput="filterTasks()" style="border-radius:20px;padding:7px 14px;font-size:12px">
+        <input type="text" class="form-control" id="searchInput" placeholder="🔍 ابحث في عنوان أو تفاصيل المهمة أو خطوات العمل..." oninput="filterTasks()" style="border-radius:20px;padding:7px 14px;font-size:12px">
       </div>
       <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">الكل</button>
-      <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">مفعّلة</button>
+      <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">🟢 مفعّلة</button>
       <button class="filter-btn" data-filter="received" onclick="setFilter('received', this)">📥 استُلمت</button>
       <button class="filter-btn" data-filter="progress" onclick="setFilter('progress', this)">⚡ جاري</button>
       <button class="filter-btn" data-filter="done" onclick="setFilter('done', this)">✅ مكتملة</button>
@@ -169,8 +178,16 @@
 
 <script src="mission-data.js"></script>
 <script>
+  let currentCategory = 'all';
   let currentFilter = 'all';
   let searchQuery = '';
+
+  function setCategory(cat, btn) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderTasks();
+  }
 
   function setFilter(f, btn) {
     currentFilter = f;
@@ -180,11 +197,12 @@
   }
 
   function filterTasks() {
-    searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
     renderTasks();
   }
 
   function refreshView() {
+    seedDemo();
     renderTasks();
     showToast('تم تحديث البيانات بنجاح ✅', 'success');
   }
@@ -197,22 +215,31 @@
   }
 
   function renderTasks() {
-    let tasks = loadTasks();
-    computeStats(tasks);
+    let allTasks = loadTasks();
+    computeStats(allTasks);
 
-    // Filters
+    let tasks = [...allTasks];
+
+    // Category Filter
+    if (currentCategory !== 'all') {
+      tasks = tasks.filter(t => (t.category || 'timeline') === currentCategory);
+    }
+
+    // Status Filters
     if (currentFilter === 'active')   tasks = tasks.filter(t => t.isActive);
     if (currentFilter === 'received') tasks = tasks.filter(t => t.status === 'received');
     if (currentFilter === 'progress') tasks = tasks.filter(t => t.status === 'progress');
     if (currentFilter === 'done')     tasks = tasks.filter(t => t.status === 'done');
 
-    // Search
+    // Search Query
     if (searchQuery) {
       tasks = tasks.filter(t =>
         t.title.toLowerCase().includes(searchQuery) ||
         t.description.toLowerCase().includes(searchQuery) ||
         (t.headName || '').toLowerCase().includes(searchQuery) ||
-        (t.committees || []).some(c => c.toLowerCase().includes(searchQuery))
+        (t.timeframe || '').toLowerCase().includes(searchQuery) ||
+        (t.committees || []).some(c => c.toLowerCase().includes(searchQuery)) ||
+        (t.steps || []).some(s => s.toLowerCase().includes(searchQuery))
       );
     }
 
@@ -223,17 +250,20 @@
         <div class="empty-state">
           <div class="empty-icon">📋</div>
           <h3>لا توجد مهام مطابقة</h3>
-          <p>لم يتم العثور على أي مهام تطابق معايير البحث الحالية</p>
+          <p>لم يتم العثور على أي مهام تطابق معايير البحث أو القسم المحدد</p>
         </div>`;
       return;
     }
 
     grid.innerHTML = tasks.map((task, i) => {
+      const catBadge = renderCategoryBadge(task.category);
+      const tfBadge = task.timeframe ? `<span class="badge-timeframe">⏱️ ${task.timeframe}</span>` : '';
       const committees = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
       const priorityHtml = task.priority === 'high'
         ? `<span class="priority-high">🔴 أولوية عاجلة</span>`
         : `<span class="priority-normal">🔵 أولوية عادية</span>`;
       const dueHtml = task.dueDate ? `<span class="badge" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3)">📅 تسليم: ${task.dueDate}</span>` : '';
+      const stepsHtml = renderStepsList(task.steps);
 
       return `
         <div class="task-card status-${task.status}" id="card-${task.id}">
@@ -242,6 +272,8 @@
             <div>
               <div class="task-title">${task.title}</div>
               <div class="task-badges">
+                ${catBadge}
+                ${tfBadge}
                 ${committees}
                 ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
                 ${priorityHtml}
@@ -252,6 +284,8 @@
           </div>
 
           <div class="task-body">${task.description}</div>
+
+          ${stepsHtml}
 
           ${task.isActive ? `
           <div class="task-timeline" style="margin:10px 0 6px">

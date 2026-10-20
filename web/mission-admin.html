@@ -309,7 +309,14 @@
         <div class="search-input-wrap" style="max-width:240px;flex:1;min-width:140px">
           <input type="text" class="form-control" id="adminSearch" placeholder="🔍 بحث في المهام..." oninput="adminFilter()" style="padding:7px 12px;font-size:12px;border-radius:20px">
         </div>
-        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:165px;padding:7px 10px;font-size:12px">
+        <select class="form-control" id="categoryFilter" onchange="adminFilter()" style="max-width:175px;padding:7px 10px;font-size:12px">
+          <option value="all">📂 كل الأقسام</option>
+          <option value="timeline">📅 المراحل الزمنية</option>
+          <option value="term2">🎯 خطة الترم الثاني</option>
+          <option value="execution">⚡ آلية التنفيذ</option>
+          <option value="improvement">💡 التطوير المؤسسي</option>
+        </select>
+        <select class="form-control" id="statusFilter" onchange="adminFilter()" style="max-width:160px;padding:7px 10px;font-size:12px">
           <option value="all">كل الحالات</option>
           <option value="live_active">🔴 الشغالة حالياً فقط</option>
           <option value="inactive">غير مفعّلة</option>
@@ -434,9 +441,28 @@
           <label><span class="required">*</span> عنوان المهمة</label>
           <input type="text" class="form-control" id="fTitle" placeholder="أدخل عنواناً واضحاً وموجزاً..." required>
         </div></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><span class="required">*</span> القسم / التصنيف</label>
+            <select class="form-control" id="fCategory">
+              <option value="timeline">📅 الجدول الزمني والمراحل الرئيسية</option>
+              <option value="term2">🎯 خطة الفصل الدراسي الثاني</option>
+              <option value="execution">⚡ آلية التنفيذ والمتابعة</option>
+              <option value="improvement">💡 مقترحات التطوير المؤسسي</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>⏱️ الفترة الزمنية / المدى الزمني</label>
+            <input type="text" class="form-control" id="fTimeframe" placeholder="مثال: من 10/12 إلى 10/21 أو حتى 11/5...">
+          </div>
+        </div>
         <div class="form-row single"><div class="form-group">
           <label><span class="required">*</span> محتوى ومطلوبات المهمة</label>
-          <textarea class="form-control" id="fDesc" rows="4" placeholder="اكتب التفاصيل والمطلوبات بدقة..." required></textarea>
+          <textarea class="form-control" id="fDesc" rows="3" placeholder="اكتب التفاصيل والمطلوبات بدقة..." required></textarea>
+        </div></div>
+        <div class="form-row single"><div class="form-group">
+          <label>📋 خطوات العمل وتوجيهات التنفيذ (خطوة في كل سطر)</label>
+          <textarea class="form-control" id="fSteps" rows="3" placeholder="اكتب كل خطوة عمل في سطر مستقل لتظهر كقائمة تحقق منظمة..."></textarea>
         </div></div>
         <div class="form-row">
           <div class="form-group">
@@ -522,9 +548,9 @@
       <button class="btn btn-danger btn-sm" onclick="clearDone()">🗑️ حذف المهام المكتملة</button>
     </div>
     <div class="form-section" style="margin-top:14px">
-      <div class="form-section-title">إعادة تهيئة البيانات التجريبية</div>
-      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">إعادة تحميل نماذج مهام جاهزة للمعاينة</p>
-      <button class="btn btn-ghost btn-sm" onclick="resetDemoTasks()">🔄 إعادة تحميل الديمو</button>
+      <div class="form-section-title">استعادة ومزامنة الخطة الرسمية (15 مهمة)</div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">استعادة وتحديث كافة مراحل ومهام الخطة الرسمية (المراحل، خطة الترم الثاني، آلية التنفيذ، والتطوير المؤسسي).</p>
+      <button class="btn btn-primary btn-sm" onclick="syncOfficialPlan()">🔄 استعادة ومزامنة الخطة الرسمية</button>
     </div>
   </div>
 </div>
@@ -706,6 +732,9 @@ function openAddModal() {
   renderTags();
   document.getElementById('taskForm').reset();
   document.getElementById('editingId').value = '';
+  if (document.getElementById('fCategory')) document.getElementById('fCategory').value = 'timeline';
+  if (document.getElementById('fTimeframe')) document.getElementById('fTimeframe').value = '';
+  if (document.getElementById('fSteps')) document.getElementById('fSteps').value = '';
   document.getElementById('fDueDate').value = '';
   document.getElementById('modalTitle').textContent = '➕ إضافة مهمة جديدة';
   document.getElementById('taskModal').classList.add('open');
@@ -720,7 +749,10 @@ function openEditModal(id) {
   renderTags();
   document.getElementById('editingId').value = id;
   document.getElementById('fTitle').value = t.title;
+  if (document.getElementById('fCategory')) document.getElementById('fCategory').value = t.category || 'timeline';
+  if (document.getElementById('fTimeframe')) document.getElementById('fTimeframe').value = t.timeframe || '';
   document.getElementById('fDesc').value = t.description;
+  if (document.getElementById('fSteps')) document.getElementById('fSteps').value = (t.steps || []).join('\n');
   document.getElementById('fHead').value = t.headName || '';
   document.getElementById('fPriority').value = t.priority || 'normal';
   document.getElementById('fActive').value = t.isActive ? '1' : '0';
@@ -751,9 +783,15 @@ function saveTask(e) {
     return;
   }
 
+  const stepsRaw = document.getElementById('fSteps') ? document.getElementById('fSteps').value : '';
+  const steps = stepsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+
   const data = {
     title: document.getElementById('fTitle').value.trim(),
+    category: document.getElementById('fCategory') ? document.getElementById('fCategory').value : 'timeline',
+    timeframe: document.getElementById('fTimeframe') ? document.getElementById('fTimeframe').value.trim() : '',
     description: document.getElementById('fDesc').value.trim(),
+    steps: steps,
     committees: [...committees],
     headName: document.getElementById('fHead').value.trim(),
     priority: document.getElementById('fPriority').value,
@@ -824,34 +862,44 @@ function clearDone() {
   renderAdmin();
   closeSettings();
 }
-function resetDemoTasks() {
-  localStorage.removeItem(STORAGE_KEY);
-  seedDemo();
-  showToast('تم استعادة المهام التجريبية ✅', 'success');
+function syncOfficialPlan() {
+  seedDemo(true);
+  showToast('تمت استعادة ومزامنة كافة مهام الخطة الرسمية (15 مهمة) بنجاح ✅', 'success');
   renderAdmin();
   closeSettings();
+}
+function resetDemoTasks() {
+  syncOfficialPlan();
 }
 
 // ── Special Feature: Telegram Dispatcher Modal ──
 function openTelegramDispatcher(id) {
   const t = getTask(id);
   if (!t) return;
+  const catLabel = CATEGORIES[t.category]?.label || 'عام';
+  const timeframeStr = t.timeframe ? `⏱️ *الفترة الزمنية:* ${t.timeframe}\n` : '';
   const committeesStr = (t.committees || []).map(c => `#${c.replace(/\s+/g, '_')}`).join(' ');
   const priorityStr = t.priority === 'high' ? '🔴 *عاجل وقصوى*' : '🔵 *عادية*';
   const statusStr = STATUSES[t.status] ? `${STATUSES[t.status].icon} ${STATUSES[t.status].label}` : '';
   const dueStr = t.dueDate ? `📅 *الموعد النهائي:* ${t.dueDate}` : '';
+  const stepsStr = Array.isArray(t.steps) && t.steps.length
+    ? `\n📋 *خطوات العمل والمطلوبات:*\n` + t.steps.map((s, idx) => `  ${idx + 1}. ${s}`).join('\n') + `\n`
+    : '';
 
   currentTgText = `🔬 *تكليف رسمي — MICROSCOPE TEAM*\n`
     + `━━━━━━━━━━━━━━━━━━━━━\n`
+    + `📂 *القسم / التصنيف:* ${catLabel}\n`
     + `📌 *المهمة:* ${t.title}\n`
+    + (timeframeStr ? timeframeStr : '')
     + `🏛 *اللجان المعنية:* ${committeesStr}\n`
     + (t.headName ? `👤 *المسؤول:* ${t.headName}\n` : '')
     + `⚡ *الأولوية:* ${priorityStr}\n`
     + `📊 *الحالة الحالية:* ${statusStr}\n`
     + (dueStr ? `${dueStr}\n` : '')
     + `━━━━━━━━━━━━━━━━━━━━━\n`
-    + `📝 *تفاصيل التكليف:*\n${t.description}\n\n`
-    + `🔗 *تابع التحديثات عبر لوحة المهام المباشرة:* [رابط المتابعة](${window.location.origin}/web/mission-view.html)`;
+    + `📝 *تفاصيل ومحتوى التكليف:*\n${t.description}\n`
+    + stepsStr
+    + `\n🔗 *تابع التحديثات عبر لوحة المهام المباشرة:* [رابط المتابعة](${window.location.origin}/web/mission-view.html)`;
 
   document.getElementById('tgTextPreview').textContent = currentTgText;
   document.getElementById('tgModal').classList.add('open');
@@ -874,17 +922,24 @@ function exportTasksReport() {
     return;
   }
   const printWindow = window.open('', '_blank');
-  const rows = tasks.map((t, i) => `
+  const rows = tasks.map((t, i) => {
+    const catLabel = CATEGORIES[t.category]?.shortLabel || 'عام';
+    const stepsList = Array.isArray(t.steps) && t.steps.length
+      ? `<ol style="margin:4px 0 0 16px;padding:0">${t.steps.map(s => `<li>${s}</li>`).join('')}</ol>`
+      : '';
+    return `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${t.title}</strong><br><small>${t.description}</small></td>
+      <td><strong>${t.title}</strong><br><small style="color:#555">${t.description}</small>${stepsList}</td>
+      <td>${catLabel}</td>
+      <td>${t.timeframe || '—'}</td>
       <td>${(t.committees || []).join(', ')}</td>
       <td>${t.headName || '—'}</td>
       <td>${t.priority === 'high' ? 'عالية' : 'عادية'}</td>
       <td>${STATUSES[t.status]?.label || t.status}</td>
       <td>${t.dueDate || '—'}</td>
     </tr>
-  `).join('');
+  `}).join('');
 
   printWindow.document.write(`
     <html dir="rtl">
@@ -905,7 +960,9 @@ function exportTasksReport() {
         <thead>
           <tr>
             <th>#</th>
-            <th>المهمة</th>
+            <th>المهمة والتفاصيل</th>
+            <th>القسم</th>
+            <th>الفترة</th>
             <th>اللجان</th>
             <th>المسؤول</th>
             <th>الأولوية</th>
@@ -924,8 +981,10 @@ function exportTasksReport() {
 }
 
 // ── Filtering ──
+let adminCategoryFilter = 'all';
 function adminFilter() {
-  adminSearchQuery = document.getElementById('adminSearch').value.toLowerCase();
+  adminSearchQuery = document.getElementById('adminSearch').value.toLowerCase().trim();
+  adminCategoryFilter = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : 'all';
   adminStatusFilter = document.getElementById('statusFilter').value;
   renderAdmin();
 }
@@ -947,6 +1006,13 @@ function renderAdmin() {
   if (modeLiveEl) modeLiveEl.textContent = liveTasksCount;
 
   let filtered = [...allTasks];
+
+  // Category Filter
+  if (adminCategoryFilter && adminCategoryFilter !== 'all') {
+    filtered = filtered.filter(t => (t.category || 'timeline') === adminCategoryFilter);
+  }
+
+  // Status Filter
   if (adminStatusFilter === 'live_active') {
     filtered = filtered.filter(t => t.isActive && t.status !== 'done');
   } else if (adminStatusFilter !== 'all') {
@@ -958,7 +1024,9 @@ function renderAdmin() {
       t.title.toLowerCase().includes(adminSearchQuery) ||
       t.description.toLowerCase().includes(adminSearchQuery) ||
       (t.headName || '').toLowerCase().includes(adminSearchQuery) ||
-      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery))
+      (t.timeframe || '').toLowerCase().includes(adminSearchQuery) ||
+      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery)) ||
+      (t.steps || []).some(s => s.toLowerCase().includes(adminSearchQuery))
     );
   }
 
@@ -973,8 +1041,11 @@ function renderAdmin() {
       const canAdv = task.isActive && curIdx < ord.length - 1;
       const nextS = canAdv ? STATUSES[ord[curIdx + 1]] : null;
       const nextBtn = nextS ? `<button class="btn btn-sm ${nextS.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">${nextS.icon} نقل إلى ${nextS.label}</button>` : '';
+      const catBadge = renderCategoryBadge(task.category);
+      const tfBadge = task.timeframe ? `<span class="badge-timeframe">⏱️ ${task.timeframe}</span>` : '';
       const badges = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
       const dueBadge = task.dueDate ? `<span class="badge" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3)">📅 تسليم: ${task.dueDate}</span>` : '';
+      const stepsHtml = renderStepsList(task.steps);
 
       return `
         <div class="task-admin-card status-${task.status}" id="acard-${task.id}">
@@ -984,12 +1055,15 @@ function renderAdmin() {
             <div>${renderBadgeStatus(task.status)}</div>
           </div>
           <div class="admin-task-badges">
+            ${catBadge}
+            ${tfBadge}
             ${badges}
             ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
             ${task.priority === 'high' ? '<span class="badge" style="background:rgba(239,68,68,0.15);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3)">🔴 أولوية عالية</span>' : ''}
             ${dueBadge}
           </div>
           <div class="admin-task-meta">${task.description}</div>
+          ${stepsHtml}
           ${task.isActive ? `<div class="task-timeline" style="margin:10px 0 6px">${renderTimeline(task)}</div>` : ''}
           <div class="admin-actions">
             <label class="toggle-wrap">
@@ -1034,23 +1108,32 @@ function renderAdmin() {
       return;
     }
 
-    colEl.innerHTML = cols[k].map(task => `
-      <div class="kanban-card" id="kcard-${task.id}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="kanban-card-title">${task.title}</div>
-          ${task.priority === 'high' ? '<span style="font-size:11px;color:var(--accent-red)">🔴</span>' : ''}
+    colEl.innerHTML = cols[k].map(task => {
+      const catBadge = renderCategoryBadge(task.category);
+      const stepsCount = Array.isArray(task.steps) && task.steps.length
+        ? `<span class="badge" style="font-size:10px;padding:2px 6px;background:rgba(0,212,255,0.1);color:var(--accent-cyan);border:1px solid rgba(0,212,255,0.25);">📋 ${task.steps.length} خطوات</span>`
+        : '';
+
+      return `
+        <div class="kanban-card" id="kcard-${task.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="kanban-card-title">${task.title}</div>
+            ${task.priority === 'high' ? '<span style="font-size:11px;color:var(--accent-red)">🔴</span>' : ''}
+          </div>
+          <div style="margin:4px 0 6px">${catBadge}</div>
+          <div class="kanban-card-desc">${task.description}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${(task.committees || []).map(c => `<span class="badge badge-committee" style="font-size:10px;padding:2px 6px">🏛 ${c}</span>`).join('')}
+            ${stepsCount}
+          </div>
+          <div class="kanban-card-foot">
+            <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditModal('${task.id}')">✏️</button>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openTelegramDispatcher('${task.id}')">📢</button>
+            ${task.status !== 'done' && task.isActive ? `<button class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:11px" onclick="advanceTaskStatus('${task.id}')">تقدم ➡️</button>` : ''}
+          </div>
         </div>
-        <div class="kanban-card-desc">${task.description}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">
-          ${(task.committees || []).map(c => `<span class="badge badge-committee" style="font-size:10px;padding:2px 6px">🏛 ${c}</span>`).join('')}
-        </div>
-        <div class="kanban-card-foot">
-          <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditModal('${task.id}')">✏️</button>
-          <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px" onclick="openTelegramDispatcher('${task.id}')">📢</button>
-          ${task.status !== 'done' && task.isActive ? `<button class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:11px" onclick="advanceTaskStatus('${task.id}')">تقدم ➡️</button>` : ''}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   });
 
   // 3. Render Live Active Board (Live Tasks from Mission Page)
@@ -1065,12 +1148,18 @@ function renderLiveTasks(allTasks) {
   // Filter tasks that are actively displayed on the live missions board (mission-view.html)
   let liveTasks = allTasks.filter(t => t.isActive && t.status !== 'done');
 
+  if (adminCategoryFilter && adminCategoryFilter !== 'all') {
+    liveTasks = liveTasks.filter(t => (t.category || 'timeline') === adminCategoryFilter);
+  }
+
   if (adminSearchQuery) {
     liveTasks = liveTasks.filter(t =>
       t.title.toLowerCase().includes(adminSearchQuery) ||
       t.description.toLowerCase().includes(adminSearchQuery) ||
       (t.headName || '').toLowerCase().includes(adminSearchQuery) ||
-      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery))
+      (t.timeframe || '').toLowerCase().includes(adminSearchQuery) ||
+      (t.committees || []).some(c => c.toLowerCase().includes(adminSearchQuery)) ||
+      (t.steps || []).some(s => s.toLowerCase().includes(adminSearchQuery))
     );
   }
 
@@ -1111,10 +1200,13 @@ function renderLiveTasks(allTasks) {
       ? `<button class="btn btn-sm ${nextS.cls === 'done' ? 'btn-green' : 'btn-amber'}" onclick="advanceTaskStatus('${task.id}')">${nextS.icon} نقل إلى: ${nextS.label}</button>`
       : '';
 
+    const catBadge = renderCategoryBadge(task.category);
+    const tfBadge = task.timeframe ? `<span class="badge-timeframe">⏱️ ${task.timeframe}</span>` : '';
     const committees = (task.committees || []).map(c => `<span class="badge badge-committee">🏛 ${c}</span>`).join('');
     const priorityHtml = task.priority === 'high'
       ? `<span class="priority-high">🔴 أولوية عاجلة وقصوى</span>`
       : `<span class="priority-normal">🔵 أولوية عادية</span>`;
+    const stepsHtml = renderStepsList(task.steps);
 
     let dueHtml = '';
     if (task.dueDate) {
@@ -1142,6 +1234,8 @@ function renderLiveTasks(allTasks) {
               <h4 style="font-size:17px; font-weight:700; color:var(--text-primary); margin:0;">${task.title}</h4>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              ${catBadge}
+              ${tfBadge}
               ${committees}
               ${task.headName ? `<span class="badge badge-head">👤 ${task.headName}</span>` : ''}
               ${priorityHtml}
@@ -1156,6 +1250,8 @@ function renderLiveTasks(allTasks) {
         <div style="color:var(--text-secondary); font-size:13px; line-height:1.7; margin:10px 0 14px; background:rgba(0,0,0,0.2); padding:10px 14px; border-radius:8px; border-right:3px solid var(--accent-cyan);">
           ${task.description}
         </div>
+
+        ${stepsHtml}
 
         <div class="task-timeline" style="margin:12px 0 14px;">
           ${renderTimeline(task)}
