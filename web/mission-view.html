@@ -123,7 +123,7 @@
           <span>بث مباشر لحظي</span>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="refreshView()">🔄 تحديث</button>
-        <a href="mission-admin.html" class="btn btn-ghost btn-sm">⚙️ لوحة الإدارة</a>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="promptAdminAccess()">⚙️ لوحة الإدارة</button>
       </div>
     </div>
   </div>
@@ -269,10 +269,91 @@
     }).join('');
   }
 
+  // ── Admin Security Gate ──
+  const ADMIN_PIN = '231113';
+
+  function promptAdminAccess() {
+    if (sessionStorage.getItem('mission_admin_auth') === ADMIN_PIN) {
+      window.location.href = 'mission-admin.html';
+      return;
+    }
+    const modal = document.getElementById('adminAuthModal');
+    const input = document.getElementById('adminPassInput');
+    const err = document.getElementById('adminPassError');
+    if (err) { err.style.display = 'none'; err.textContent = ''; }
+    if (input) { input.value = ''; }
+    if (modal) modal.classList.add('open');
+    setTimeout(() => { if (input) input.focus(); }, 150);
+  }
+
+  function closeAdminAuthModal() {
+    const modal = document.getElementById('adminAuthModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function verifyAdminPass() {
+    const input = document.getElementById('adminPassInput');
+    const err = document.getElementById('adminPassError');
+    const val = input ? input.value.trim() : '';
+
+    if (val === ADMIN_PIN) {
+      sessionStorage.setItem('mission_admin_auth', ADMIN_PIN);
+      if (err) {
+        err.style.display = 'block';
+        err.style.color = 'var(--accent-green)';
+        err.textContent = 'تم التحقق بنجاح ✅ جاري التوجيه...';
+      }
+      setTimeout(() => {
+        window.location.href = 'mission-admin.html';
+      }, 350);
+    } else {
+      if (input) {
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 450);
+        input.select();
+      }
+      if (err) {
+        err.style.display = 'block';
+        err.style.color = 'var(--accent-red)';
+        err.textContent = 'رمز المرور غير صحيح! يرجى التأكد وإعادة المحاولة ❌';
+      }
+    }
+  }
+
+  // Close modal on outside click
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.classList.remove('open');
+    }
+  });
+
   // Auto-refresh every 25 seconds
   seedDemo();
   renderTasks();
   setInterval(renderTasks, 25000);
 </script>
+
+<!-- ADMIN AUTH MODAL -->
+<div class="modal-overlay" id="adminAuthModal">
+  <div class="modal-box" style="max-width:420px;text-align:center;">
+    <div style="width:58px;height:58px;border-radius:50%;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;">
+      🔐
+    </div>
+    <div class="modal-header" style="justify-content:center;border-bottom:none;margin-bottom:6px;padding-bottom:0;">
+      <div class="modal-title" style="font-size:20px;">التحقق من صلاحية الإدارة</div>
+    </div>
+    <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:18px;">
+      لوحة إدارة وتحرير المهام مخصصة للمشرفين فقط.<br>يرجى إدخال رمز المرور للمتابعة:
+    </p>
+    <div class="form-group" style="margin-bottom:12px;">
+      <input type="password" class="form-control" id="adminPassInput" placeholder="أدخل رمز المرور..." style="text-align:center;font-size:18px;letter-spacing:6px;height:44px;" autocomplete="off" onkeydown="if(event.key==='Enter') verifyAdminPass()">
+      <div id="adminPassError" style="color:var(--accent-red);font-size:12px;margin-top:8px;display:none;font-weight:700;"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeAdminAuthModal()">إلغاء</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="verifyAdminPass()">🔓 دخول لوحة الإدارة</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
