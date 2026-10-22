@@ -1912,7 +1912,7 @@ const S = {
                   <button class="btn btn-sm btn-icon" style="color:var(--primary);border-color:var(--primary);background:transparent"
                     onclick="S.curriculum.viewMaterial('${eTrack}','${eSubj}','${eTyKey}','${eMat}')" title="${I18n.t("View Details")}">👁️</button>
                   <button class="btn btn-sm btn-icon" style="color:var(--danger);border-color:var(--danger);background:transparent"
-                    onclick="S.curriculum.deleteNode('${eTrack}','${eSubj}','${eTyKey}','${eMat}','${eName}')" title="${I18n.t("Delete")}">🗑</button>
+                    onclick="S.curriculum.deleteMat('${eTrack}','${eSubj}','${eTyKey}','${eMat}','${eName}')" title="${I18n.t("Delete")}">🗑</button>
                 </div>
               </div>`;
             }
@@ -1925,6 +1925,8 @@ const S = {
                 <span class="tree-lbl">${I18n.t(tyKey)}</span>
                 <span class="tree-badge" style="background:rgba(34,197,94,.12);color:var(--success)">${mats.length} ${I18n.t("Items")}</span>
                 <div class="tree-actions">
+                  <button class="btn btn-sm btn-icon" style="color:var(--success);border-color:var(--success);background:transparent"
+                  onclick="event.stopPropagation();S.curriculum.addTextMaterial('${eTrack}','${eSubj}','${eTyKey}')" title="${I18n.t("Add Lecture by Name / Text")}">+📝</button>
                   <button class="btn btn-sm btn-icon" style="color:var(--primary);border-color:var(--primary);background:transparent"
                   onclick="event.stopPropagation();S.curriculum.triggerUpload('${eTrack}','${eSubj}','${eTyKey}')" title="${I18n.t("Upload file")}">📤</button>
                   <button class="btn btn-sm btn-icon" style="color:var(--danger);border-color:var(--danger);background:transparent"
@@ -2399,7 +2401,10 @@ const S = {
       }
     },
 
-    async deleteNode(track, subject, type, label){
+    async deleteNode(track, subject, type, label, extraName){
+      if(extraName !== undefined){
+        return this.deleteMat(track, subject, type, label, extraName);
+      }
       const ok = await UI.modal(`Delete "${label}"?`,
         `<p style="color:var(--dim);font-size:.875rem;line-height:1.6">
           This will permanently delete <strong style="color:var(--text)">${label}</strong> and <em>all its contents</em>.
@@ -2572,6 +2577,112 @@ const S = {
         reader.onerror = () => UI.toast('Failed to read file', 'error');
       } catch(e) {
         UI.toast('Upload Error: ' + e.message, 'error');
+      }
+    },
+
+    async viewMaterial(track, subject, type, matId){
+      const data = this._data;
+      const mat = data?.[track]?.[subject]?.[type]?.[matId];
+      if(!mat){
+        UI.toast('Material details not found', 'error');
+        return;
+      }
+      const name = mat.name || mat.title || matId;
+      const fileType = mat.file_type || 'text/doc';
+      const fileId = mat.file_id || '';
+      const textContent = mat.text || mat.description || mat.content || '';
+      const url = mat.url || mat.link || '';
+      const uploadedAt = mat.uploaded_at ? new Date(mat.uploaded_at).toLocaleString() : 'N/A';
+
+      const html = `
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:0.9rem;">
+          <div style="background:var(--surface2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);">
+            <div style="color:var(--dim);font-size:0.75rem;margin-bottom:2px;">Track & Subject</div>
+            <div style="font-weight:600;color:var(--text);">${track} ❯ ${subject} ❯ <span class="badge" style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 8px;border-radius:6px;">${type}</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:var(--surface2);padding:10px 12px;border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--dim);font-size:0.75rem;">Type</div>
+              <div style="font-weight:600;color:var(--text);">${fileType}</div>
+            </div>
+            <div style="background:var(--surface2);padding:10px 12px;border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--dim);font-size:0.75rem;">Date</div>
+              <div style="font-weight:600;color:var(--text);font-size:0.8rem;">${uploadedAt}</div>
+            </div>
+          </div>
+          ${textContent ? `
+            <div style="background:var(--surface2);padding:12px;border-radius:10px;border:1px solid var(--border);">
+              <div style="color:var(--dim);font-size:0.75rem;margin-bottom:4px;">Description / Text (String)</div>
+              <div style="font-size:0.88rem;color:var(--text);white-space:pre-wrap;max-height:120px;overflow-y:auto;background:rgba(0,0,0,0.1);padding:8px;border-radius:6px;">${textContent}</div>
+            </div>
+          ` : ''}
+          ${url ? `
+            <div style="background:var(--surface2);padding:12px;border-radius:10px;border:1px solid var(--border);">
+              <div style="color:var(--dim);font-size:0.75rem;margin-bottom:4px;">Direct Link</div>
+              <a href="${url}" target="_blank" style="color:var(--primary);word-break:break-all;font-size:0.85rem;text-decoration:underline;">${url} ↗</a>
+            </div>
+          ` : ''}
+          ${fileId ? `
+            <div style="background:var(--surface2);padding:10px 12px;border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--dim);font-size:0.75rem;">Telegram File ID</div>
+              <code style="font-size:0.75rem;color:var(--dim);word-break:break-all;">${fileId}</code>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      await UI.modal(`📖 ${name}`, html, 'Close', false);
+    },
+
+    async addTextMaterial(track, subject, type){
+      const html = `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <p style="font-size:0.85rem;color:var(--dim);margin:0;">
+            إضافة محاضرة أو ملخص بالاسم والنص فقط (خفيف وسلس بدون رفع ملفات على الفايربيز).
+          </p>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;color:var(--dim);">اسم المحاضرة / المادة *</label>
+            <input id="add-mat-name" placeholder="مثال: المحاضرة الأولى - مقدمة" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);" />
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;color:var(--dim);">وصف المحاضرة / محتوى نصي (String)</label>
+            <textarea id="add-mat-desc" rows="3" placeholder="ملاحظات، ملخص نصي، أو محتوى المحاضرة..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:inherit;"></textarea>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;color:var(--dim);">رابط خارجي اختياري (Drive / YouTube / Web)</label>
+            <input id="add-mat-url" placeholder="https://..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);" />
+          </div>
+        </div>
+      `;
+      const ok = await UI.modal(`+📝 إضافة محاضرة بالاسم إلى [${type}]`, html, 'حفظ وإضافة');
+      if(!ok) return;
+
+      const name = document.getElementById('add-mat-name')?.value?.trim();
+      if(!name){
+        UI.toast('يجب إدخال اسم المحاضرة', 'error');
+        return;
+      }
+      const desc = document.getElementById('add-mat-desc')?.value?.trim() || '';
+      const url = document.getElementById('add-mat-url')?.value?.trim() || '';
+
+      const matId = 'mat_' + Date.now();
+      const payload = {
+        name: name,
+        title: name,
+        file_type: 'text',
+        file_id: '',
+        text: desc,
+        description: desc,
+        url: url,
+        uploaded_at: new Date().toISOString(),
+        uploaded_by: 'Dashboard'
+      };
+
+      try {
+        await FB.put(`/curriculum/${encodeURIComponent(track)}/${encodeURIComponent(subject)}/${encodeURIComponent(type)}/${encodeURIComponent(matId)}`, payload);
+        UI.toast(`تمت إضافة "${name}" بنجاح!`, 'success');
+        await this.fetchAndRender();
+      } catch(e) {
+        UI.toast('فشل الحفظ: ' + e.message, 'error');
       }
     }
   },

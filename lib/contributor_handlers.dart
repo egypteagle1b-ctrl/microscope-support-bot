@@ -154,6 +154,105 @@ Future<void> handleUploadText(Context ctx, Bot bot) async {
       Utils.broadcast(bot, users2, text);
       break;
 
+    // ---- Smart Search Beta -------------------------------------------
+    case 'smart_search_query':
+      Utils.clearUploadState(userId);
+      final query = text.trim();
+      final results = await FirebaseDb.searchCurriculum(query);
+      if (results.isEmpty) {
+        final backKb = InlineKeyboard().row().add(S.get('btn_back', lang), 'back:main');
+        await ctx.reply(
+          S.get('search_no_results', lang, {'query': query}),
+          replyMarkup: backKb,
+          parseMode: ParseMode.markdown,
+        );
+        break;
+      }
+
+      final kb = InlineKeyboard();
+      for (var r in results) {
+        final kind = r['kind'];
+        if (kind == 'subject') {
+          kb.row().add(
+            r['title'],
+            'subj:${Utils.shorten(r['track'])}:${Utils.shorten(r['subject'])}',
+          );
+        } else if (kind == 'material') {
+          kb.row().add(
+            r['title'],
+            'mat:${Utils.shorten(r['track'])}:${Utils.shorten(r['subject'])}:${Utils.shorten(r['matType'])}:${Utils.shorten(r['materialId'])}',
+          );
+        }
+      }
+      kb.row().add(S.get('btn_back', lang), 'back:main');
+      await ctx.reply(
+        S.get('search_results_title', lang, {'query': query}),
+        replyMarkup: kb,
+        parseMode: ParseMode.markdown,
+      );
+      break;
+
+    // ---- Contributor Quick Add Lecture (by name/text) ----------------
+    case 'contrib_quick_add_name':
+      state['lecture_name'] = text.trim();
+      state['action'] = 'contrib_quick_add_desc';
+      await ctx.reply(S.get('quick_add_desc_prompt', lang));
+      break;
+
+    case 'contrib_quick_add_desc':
+      final qTrack = state['track'] as String? ?? '';
+      final qSubject = state['subject'] as String? ?? '';
+      final qType = state['type'] as String? ?? 'ملخص';
+      final qName = state['lecture_name'] as String? ?? 'محاضرة';
+      final desc = text.trim().toLowerCase() == 'تخطي' || text.trim().toLowerCase() == 'skip'
+          ? ''
+          : text.trim();
+      Utils.clearUploadState(userId);
+
+      final isLink = desc.startsWith('http://') || desc.startsWith('https://');
+      final fType = isLink ? 'link' : 'text';
+
+      final matId = await FirebaseDb.addMaterial(qTrack, qSubject, qType, {
+        'name': qName,
+        'file_id': desc.isNotEmpty ? desc : qName,
+        'file_type': fType,
+        'description': desc,
+        'added_by': userId.toString(),
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      if (matId != null) {
+        await FirebaseDb.addContributorMaterialRef(userId, matId, {
+          'track': qTrack,
+          'subject': qSubject,
+          'type': qType,
+          'name': qName,
+          'file_id': desc.isNotEmpty ? desc : qName,
+          'file_type': fType,
+        });
+
+        // Notify subscribers
+        final subscribers = await FirebaseDb.getSubjectSubscribers(qSubject);
+        if (subscribers.isNotEmpty) {
+          final notifyText = '🔔 إضافة جديدة!\n\nتمت إضافة: **$qName** في مادة: **$qSubject**\nالنوع: $qType\n\nتفضل بزيارة البوت للاطلاع عليها.';
+          Utils.broadcast(bot, subscribers, notifyText);
+        }
+
+        final backKb = InlineKeyboard().row().add(S.get('btn_back_dashboard', lang), 'contrib_dash');
+        await ctx.reply(
+          S.get('quick_add_success', lang, {
+            'name': qName,
+            'track': qTrack,
+            'subject': qSubject,
+            'type': qType,
+          }),
+          replyMarkup: backKb,
+        );
+      } else {
+        await ctx.reply(S.get('upload_failed', lang));
+      }
+      break;
+
     // ---- Upload flow: new track / subject typed manually ─────────────
     case 'upload_admin_track':
       state['action'] = 'upload_admin_subject';
@@ -641,7 +740,7 @@ void registerContributorUploadHandlers(Bot bot) {
     for (var e in mats) {
       final matId = e.key;
       final name = e.value['name'] as String? ?? matId;
-      keyboard.row().add('$name 🗑️', 'contrib_del_mat:$matId:$track:$subject:$type');
+      keyboard.row().add('$name 🗑️', 'contrib_del_mat:${Utils.shorten(matId)}:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}');
     }
     keyboard.row().add('🔙 رجوع', 'c_mat_subj:$track:$subject');
 
@@ -655,10 +754,10 @@ void registerContributorUploadHandlers(Bot bot) {
     final lang = Utils.getUserLanguage(userId);
 
     final parts = data.split(':');
-    final matId = parts[1];
-    final track = parts[2];
-    final subject = parts[3];
-    final type = parts[4];
+    final matId = Utils.lengthen(parts[1]);
+    final track = Utils.lengthen(parts[2]);
+    final subject = Utils.lengthen(parts[3]);
+    final type = Utils.lengthen(parts[4]);
 
     await FirebaseDb.deleteMaterial(track, subject, type, matId);
     await FirebaseDb.removeContributorMaterialRef(userId, matId);
@@ -709,11 +808,154 @@ void registerContributorUploadHandlers(Bot bot) {
     for (var e in mats) {
       final id = e.key;
       final name = e.value['name'] as String? ?? id;
-      keyboard.row().add('$name 🗑️', 'contrib_del_mat:$id:$track:$subject:$type');
+      keyboard.row().add('$name 🗑️', 'contrib_del_mat:${Utils.shorten(id)}:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}');
     }
     keyboard.row().add('🔙 رجوع', 'c_mat_subj:$track:$subject');
 
     await ctx.editMessageText('📋 موادي - $type:\nاختر الملف لحذفه:', replyMarkup: keyboard);
+  });
+
+  // ── Contributor Analytics (NEW FEATURE) ─────────────────────────────
+  bot.callbackQuery('contrib_analytics', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    await ctx.answerCallbackQuery();
+
+    final materials = await FirebaseDb.getContributorMaterials(userId);
+    if (materials.isEmpty) {
+      final backKb = InlineKeyboard().row().add(S.get('btn_back_dashboard', lang), 'contrib_dash');
+      await ctx.editMessageText('📊 ليس لديك أي مواد مرفوعة لعرض إحصائياتها بعد.', replyMarkup: backKb);
+      return;
+    }
+
+    final stats = await FirebaseDb.getStats();
+    final topMaterials = stats['topMaterials'] as Map<String, dynamic>? ?? {};
+
+    int totalViews = 0;
+    final accessedList = <Map<String, dynamic>>[];
+
+    for (var entry in materials.entries) {
+      final matId = entry.key;
+      final mData = entry.value as Map<String, dynamic>;
+      final mName = mData['name']?.toString() ?? matId;
+      int count = 0;
+      if (topMaterials.containsKey(matId)) {
+        final topEntry = topMaterials[matId];
+        if (topEntry is Map && topEntry['count'] != null) {
+          count = topEntry['count'] as int;
+        }
+      }
+      totalViews += count;
+      if (count > 0) {
+        accessedList.add({'name': mName, 'count': count});
+      }
+    }
+
+    accessedList.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+
+    String msg = '📊 *إحصائيات موادي وتفاعل الطلاب*\n\n';
+    msg += '📁 *إجمالي المواد المرفوعة:* ${materials.length} مادة\n';
+    msg += '👀 *إجمالي المشاهدات/التحميلات:* $totalViews مشاهدة\n\n';
+
+    if (accessedList.isNotEmpty) {
+      msg += '🔥 *المواد الأكثر تفاعلاً:*\n';
+      for (var i = 0; i < accessedList.length && i < 5; i++) {
+        msg += '${i + 1}. ${accessedList[i]['name']} — ${accessedList[i]['count']} مشاهدة\n';
+      }
+    } else {
+      msg += '✨ لم يتم تسجيل تفاعلات بعد على موادك.';
+    }
+
+    final kb = InlineKeyboard().row().add(S.get('btn_back_dashboard', lang), 'contrib_dash');
+    await ctx.editMessageText(msg, replyMarkup: kb, parseMode: ParseMode.markdown);
+  });
+
+  // ── Contributor Quick Add Lecture (NEW FEATURE) ─────────────────────
+  bot.callbackQuery('contrib_quick_add', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+
+    final isContributor = await FirebaseDb.isContributor(userId);
+    final isAdmin = await FirebaseDb.isAdmin(userId);
+    if (!isContributor && !isAdmin) {
+      await ctx.answerCallbackQuery(text: S.get('no_permission_upload', lang), showAlert: true);
+      return;
+    }
+
+    Utils.uploadStates[userId] = {'action': 'wait_for_quick_add_track'};
+    final tracks = await FirebaseDb.getTracks();
+    if (tracks.isEmpty) {
+      await ctx.answerCallbackQuery(text: S.get('upload_no_categories', lang), showAlert: true);
+      return;
+    }
+
+    final keyboard = InlineKeyboard();
+    for (var t in tracks) {
+      keyboard.row().add(t, 'qa_track:${Utils.shorten(t)}');
+    }
+    keyboard.row().add(S.get('btn_back_dashboard', lang), 'contrib_dash');
+
+    await ctx.editMessageText('اختر المسار لإضافة المحاضرة فيه:', replyMarkup: keyboard);
+  });
+
+  bot.callbackQuery(RegExp(r'^qa_track:(.+)'), (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final data = ctx.callbackQuery!.data!;
+    final track = Utils.lengthen(data.substring('qa_track:'.length));
+
+    final state = Utils.uploadStates[userId];
+    if (state == null) return;
+    state['track'] = track;
+    state['action'] = 'wait_for_quick_add_subject';
+
+    final subjects = await FirebaseDb.getSubjects(track);
+    final keyboard = InlineKeyboard();
+    for (var s in subjects) {
+      keyboard.row().add(s, 'qa_subj:${Utils.shorten(s)}');
+    }
+    keyboard.row().add('🔙 رجوع', 'contrib_quick_add');
+
+    await ctx.editMessageText('المسار: $track\nاختر المادة:', replyMarkup: keyboard);
+  });
+
+  bot.callbackQuery(RegExp(r'^qa_subj:(.+)'), (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final data = ctx.callbackQuery!.data!;
+    final subject = Utils.lengthen(data.substring('qa_subj:'.length));
+
+    final state = Utils.uploadStates[userId];
+    if (state == null) return;
+    final track = state['track'] as String? ?? '';
+    state['subject'] = subject;
+    state['action'] = 'wait_for_quick_add_type';
+
+    final types = await FirebaseDb.getMaterialTypes(track, subject);
+    final keyboard = InlineKeyboard();
+    for (var t in types) {
+      keyboard.row().add(t, 'qa_type:${Utils.shorten(t)}');
+    }
+    keyboard.row().add('🔙 رجوع', 'qa_track:${Utils.shorten(track)}');
+
+    await ctx.editMessageText('المادة: $subject\nاختر النوع (ملخص، شرح، فيديو...):', replyMarkup: keyboard);
+  });
+
+  bot.callbackQuery(RegExp(r'^qa_type:(.+)'), (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    final data = ctx.callbackQuery!.data!;
+    final type = Utils.lengthen(data.substring('qa_type:'.length));
+
+    final state = Utils.uploadStates[userId];
+    if (state == null) return;
+    state['type'] = type;
+    state['action'] = 'contrib_quick_add_name';
+
+    await ctx.editMessageText(S.get('quick_add_name_prompt', lang));
   });
 
   // Contributor announce new lecture
@@ -778,13 +1020,15 @@ Future<void> _showContributorDashboard(Context ctx, int userId, String lang,
   final kb = InlineKeyboard()
     .row()
     .add(S.get('btn_add_subject', lang), 'contrib_add_subject')
+    .add(S.get('btn_quick_add_lecture', lang), 'contrib_quick_add')
     .row()
     .add(S.get('btn_my_materials', lang), 'contrib_materials')
-    .add(S.get('btn_announce', lang), 'contrib_announce')
+    .add(S.get('btn_contrib_stats', lang), 'contrib_analytics')
     .row()
+    .add(S.get('btn_announce', lang), 'contrib_announce')
     .add(S.get('btn_self_remove', lang), 'contrib_self_remove')
     .row()
-    .add(S.get('btn_back', lang), 'back:tracks');
+    .add(S.get('btn_back', lang), 'back:main');
 
   final msg = S.get('contrib_dashboard_title', lang, {
     'count': '$count',

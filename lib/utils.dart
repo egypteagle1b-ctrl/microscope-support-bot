@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:televerse/televerse.dart';
 import 'config.dart';
 
@@ -49,18 +51,57 @@ class Utils {
   static int _idCounter = 0;
   static final Map<String, String> _shortToLong = {};
   static final Map<String, String> _longToShort = {};
+  static bool _shortenerLoaded = false;
+
+  static void _initShortener() {
+    if (_shortenerLoaded) return;
+    _shortenerLoaded = true;
+    try {
+      final f = File('.shortener_cache.json');
+      if (f.existsSync()) {
+        final content = f.readAsStringSync();
+        final map = json.decode(content) as Map<String, dynamic>;
+        map.forEach((k, v) {
+          final sVal = v.toString();
+          _shortToLong[k] = sVal;
+          _longToShort[sVal] = k;
+          final idNum = int.tryParse(k, radix: 36);
+          if (idNum != null && idNum > _idCounter) {
+            _idCounter = idNum;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  static void _saveShortener() {
+    try {
+      final f = File('.shortener_cache.json');
+      f.writeAsStringSync(json.encode(_shortToLong));
+    } catch (_) {}
+  }
 
   static String shorten(String data) {
-    if (data.length < 10) return data; // Only shorten if long enough
+    if (data.isEmpty) return data;
+    if (data.startsWith('page_')) return data;
+    _initShortener();
     if (_longToShort.containsKey(data)) return _longToShort[data]!;
+
+    // Keep original only if very short ascii alphanumeric with no colon or space
+    if (RegExp(r'^[a-zA-Z0-9_-]{1,6}$').hasMatch(data)) {
+      return data;
+    }
+
     _idCounter++;
     final shortId = _idCounter.toRadixString(36);
     _shortToLong[shortId] = data;
     _longToShort[data] = shortId;
+    _saveShortener();
     return shortId;
   }
 
   static String lengthen(String shortId) {
+    _initShortener();
     return _shortToLong[shortId] ?? shortId;
   }
 

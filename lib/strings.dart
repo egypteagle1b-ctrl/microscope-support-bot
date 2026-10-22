@@ -51,6 +51,62 @@ class S {
       'ar': 'لوحة المساهم 🎛️',
       'en': 'Contributor Dashboard 🎛️',
     },
+    'btn_my_tables': {
+      'ar': '📅 جداولي الدراسية والتنبيهات ⚡',
+      'en': '📅 My Schedules & Alerts ⚡',
+    },
+    'btn_smart_search_beta': {
+      'ar': '🔍 البحث الذكي في المواد [BETA 🧪]',
+      'en': '🔍 Smart Material Search [BETA 🧪]',
+    },
+    'search_prompt': {
+      'ar': '🔍 أرسل اسم المادة أو المحاضرة أو كلمة مفتاحية للبحث عنها في كل الأقسام:\n(أرسل /start للإلغاء)',
+      'en': '🔍 Send a subject, lecture name, or keyword to search across all tracks:\n(Send /start to cancel)',
+    },
+    'search_results_title': {
+      'ar': '🔎 نتائج البحث عن "*{query}*":\n\nاختر النتيجة للوصول المباشر:',
+      'en': '🔎 Search results for "*{query}*":\n\nSelect a result to open:',
+    },
+    'search_no_results': {
+      'ar': '❌ لم يتم العثور على أي نتائج تطابق "*{query}*". جرب كلمة بحث أخرى.',
+      'en': '❌ No matching results found for "*{query}*". Try another keyword.',
+    },
+    'btn_feedback_inbox': {
+      'ar': '📬 صندوق الرسائل والشكاوى',
+      'en': '📬 Feedback & Inbox',
+    },
+    'btn_system_health': {
+      'ar': '🩺 فحص صحة النظام',
+      'en': '🩺 System Health',
+    },
+    'btn_contrib_stats': {
+      'ar': '📊 إحصائيات موادي والتفاعل',
+      'en': '📊 My Uploads & Stats',
+    },
+    'btn_quick_add_lecture': {
+      'ar': '➕ إضافة محاضرة بالاسم',
+      'en': '➕ Add Lecture by Name',
+    },
+    'quick_add_name_prompt': {
+      'ar': 'اكتب اسم المحاضرة أو الملخص الجديد (مثال: المحاضرة 1 - مقدمة في المنهج):',
+      'en': 'Type the lecture or summary title (e.g. Lecture 1 - Introduction):',
+    },
+    'quick_add_desc_prompt': {
+      'ar': 'أدخل نص/وصف أو رابط للمحاضرة (أو اكتب "تخطي"):',
+      'en': 'Enter text/description or link for the lecture (or type "skip"):',
+    },
+    'quick_add_success': {
+      'ar': '✅ تم حفظ المحاضرة بنجاح:\n📌 {name}\n📁 {track} ← {subject} ← {type}',
+      'en': '✅ Lecture saved successfully:\n📌 {name}\n📁 {track} → {subject} → {type}',
+    },
+    'tab_recent_updates': {
+      'ar': '🔔 آخر تحديثات موادي',
+      'en': '🔔 Recent Updates for My Subjects',
+    },
+    'tab_share': {
+      'ar': '📤 مشاركة بطاقة الجدول',
+      'en': '📤 Share Schedule Card',
+    },
     'no_tracks': {
       'ar': 'لا توجد مسارات بعد',
       'en': 'No tracks available yet',

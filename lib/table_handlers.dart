@@ -164,7 +164,7 @@ void registerTableHandlers(Bot bot) {
 
     final kb = InlineKeyboard();
     tables.forEach((tableName, data) {
-      kb.row().add('📅 $tableName', 'vt:$tableName');
+      kb.row().add('📅 $tableName', 'vt:${Utils.shorten(tableName)}');
     });
     kb.row().add('🔙 رجوع', 'table_dash');
 
@@ -175,15 +175,16 @@ void registerTableHandlers(Bot bot) {
     final userId = ctx.from?.id;
     final data = ctx.callbackQuery?.data;
     if (userId == null || data == null) return;
-    final tableName = data.replaceFirst('vt:', '');
+    final tableNameRaw = data.replaceFirst('vt:', '');
+    final tableName = Utils.lengthen(tableNameRaw);
     await ctx.answerCallbackQuery();
 
     final tables = await FirebaseDb.getTables(userId);
     if (!tables.containsKey(tableName)) return;
 
-    final track = tables[tableName]['track'];
+    final track = tables[tableName]['track'] ?? '';
     final subjectsWithTracks = (tables[tableName]['subjects_with_tracks'] as List<dynamic>?)?.cast<String>();
-    final subjects = (tables[tableName]['subjects'] as List<dynamic>).cast<String>();
+    final subjects = (tables[tableName]['subjects'] as List<dynamic>?)?.cast<String>() ?? [];
 
     final kb = InlineKeyboard();
     if (subjectsWithTracks != null) {
@@ -192,17 +193,17 @@ void registerTableHandlers(Bot bot) {
           final parts = s.split('|');
           final t = parts[0];
           final sub = parts[1];
-          kb.row().add('📚 $sub', 'subj:$t:$sub');
+          kb.row().add('📚 $sub', 'subj:${Utils.shorten(t)}:${Utils.shorten(sub)}');
         } else {
-          kb.row().add('📚 $s', 'subj:$track:$s');
+          kb.row().add('📚 $s', 'subj:${Utils.shorten(track)}:${Utils.shorten(s)}');
         }
       }
     } else {
       for (var s in subjects) {
-        kb.row().add('📚 $s', 'subj:$track:$s');
+        kb.row().add('📚 $s', 'subj:${Utils.shorten(track)}:${Utils.shorten(s)}');
       }
     }
-    kb.row().add('🗑 مسح الجدول', 'del_table:$tableName');
+    kb.row().add('🗑 مسح الجدول', 'del_table:${Utils.shorten(tableName)}');
     kb.row().add('🔙 رجوع لجداولك', 'view_tables');
 
     await ctx.editMessageText('جدول: $tableName\nالمواد المسجلة:', replyMarkup: kb);
@@ -212,7 +213,8 @@ void registerTableHandlers(Bot bot) {
     final userId = ctx.from?.id;
     final data = ctx.callbackQuery?.data;
     if (userId == null || data == null) return;
-    final tableName = data.replaceFirst('del_table:', '');
+    final tableNameRaw = data.replaceFirst('del_table:', '');
+    final tableName = Utils.lengthen(tableNameRaw);
     await ctx.answerCallbackQuery(text: 'تم حذف الجدول.');
     
     await FirebaseDb.deleteTable(userId, tableName);
@@ -224,7 +226,7 @@ void registerTableHandlers(Bot bot) {
     } else {
       final kb = InlineKeyboard();
       tables.forEach((name, data) {
-        kb.row().add('📅 $name', 'vt:$name');
+        kb.row().add('📅 $name', 'vt:${Utils.shorten(name)}');
       });
       kb.row().add('🔙 رجوع', 'table_dash');
       await ctx.editMessageText('اختر الجدول لعرض تفاصيله:', replyMarkup: kb);
@@ -237,6 +239,101 @@ void registerTableHandlers(Bot bot) {
     await ctx.answerCallbackQuery(text: 'تم حذف جميع الجداول.');
     await FirebaseDb.deleteAllTables(userId);
     await _showTableDashboard(ctx, userId, edit: true);
+  });
+
+  bot.callbackQuery('tab_recent_updates', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    await ctx.answerCallbackQuery(text: 'جاري جلب أحدث التحديثات...');
+
+    final tables = await FirebaseDb.getTables(userId);
+    if (tables.isEmpty) {
+      await ctx.editMessageText(
+        'ليس لديك أي جداول مسجلة بعد.\nقم بإنشاء جدول أولاً لاختيار المواد التي تود متابعة تحديثاتها.',
+        replyMarkup: InlineKeyboard().row().add('➕ إضافة جدول جديد', 'add_table').row().add('🔙 رجوع', 'table_dash'),
+      );
+      return;
+    }
+
+    final Set<String> userSubjects = {};
+    tables.forEach((_, tData) {
+      final swt = (tData['subjects_with_tracks'] as List<dynamic>?)?.cast<String>();
+      if (swt != null) {
+        for (var s in swt) {
+          userSubjects.add(s.contains('|') ? s.split('|')[1] : s);
+        }
+      }
+      final subs = (tData['subjects'] as List<dynamic>?)?.cast<String>();
+      if (subs != null) {
+        userSubjects.addAll(subs);
+      }
+    });
+
+    final updates = await FirebaseDb.getLatestScheduleUpdates(userSubjects.toList());
+    if (updates.isEmpty) {
+      await ctx.editMessageText(
+        '📌 لا توجد ملفات أو محاضرات جديدة مضافة لموادك المسجلة حتى الآن.',
+        replyMarkup: InlineKeyboard().row().add('🔙 رجوع', 'table_dash'),
+      );
+      return;
+    }
+
+    final kb = InlineKeyboard();
+    final buffer = StringBuffer('📢 *آخر التحديثات للمواد المسجلة في جداولك:*\n\n');
+    for (int i = 0; i < updates.length && i < 8; i++) {
+      final up = updates[i];
+      final title = up['title'] ?? 'ملف';
+      final subj = up['subject'] ?? '';
+      final track = up['track'] ?? '';
+      final type = up['type'] ?? '';
+      final id = up['id'] ?? '';
+      buffer.writeln('${i + 1}. *[$subj]* $title ($type)');
+      kb.row().add(
+        '📖 $title ($subj)',
+        'mat:${Utils.shorten(track)}:${Utils.shorten(subj)}:${Utils.shorten(type)}:${Utils.shorten(id)}',
+      );
+    }
+    kb.row().add('🔙 رجوع', 'table_dash');
+
+    await ctx.editMessageText(buffer.toString(), parseMode: ParseMode.markdown, replyMarkup: kb);
+  });
+
+  bot.callbackQuery('tab_share', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    await ctx.answerCallbackQuery();
+
+    final tables = await FirebaseDb.getTables(userId);
+    if (tables.isEmpty) {
+      await ctx.editMessageText(
+        'لا يوجد لديك أي جداول حالياً لمشاركتها.',
+        replyMarkup: InlineKeyboard().row().add('🔙 رجوع', 'table_dash'),
+      );
+      return;
+    }
+
+    final buffer = StringBuffer('📋 *بطاقة المواد الدراسية المسجلة*\n');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    tables.forEach((tName, tData) {
+      buffer.writeln('📅 *جدول: $tName*');
+      final swt = (tData['subjects_with_tracks'] as List<dynamic>?)?.cast<String>();
+      if (swt != null && swt.isNotEmpty) {
+        for (var s in swt) {
+          final sub = s.contains('|') ? s.split('|')[1] : s;
+          buffer.writeln('  ▫️ $sub');
+        }
+      } else {
+        final subs = (tData['subjects'] as List<dynamic>?)?.cast<String>() ?? [];
+        for (var s in subs) {
+          buffer.writeln('  ▫️ $s');
+        }
+      }
+      buffer.writeln('');
+    });
+    buffer.writeln('💡 يمكنك متابعة وتعديل جدولك دائماً عبر بوت التيليجرام.');
+
+    final kb = InlineKeyboard().row().add('🔙 رجوع', 'table_dash');
+    await ctx.editMessageText(buffer.toString(), parseMode: ParseMode.markdown, replyMarkup: kb);
   });
 }
 
@@ -269,9 +366,11 @@ Future<void> _showTableDashboard(Context ctx, int userId, {bool edit = false}) a
   final kb = InlineKeyboard()
     .row().add('➕ إضافة جدول جديد', 'add_table')
     .row().add('📋 عرض جداولي', 'view_tables')
+    .row().add('📢 آخر التحديثات لموادي', 'tab_recent_updates')
+    .row().add('📤 مشاركة بطاقة الجداول', 'tab_share')
     .row().add('🗑 مسح جميع الجداول', 'del_all_tables');
 
-  final msg = '📚 إدارة الجداول الدراسية\n\nأهلاً بك! يمكنك هنا إنشاء جدول بالمواد التي تدرسها هذا الترم. سيقوم البوت بإرسال إشعار لك فور إضافة أي ملف جديد في المواد التي اخترتها.';
+  final msg = '📚 إدارة الجداول الدراسية\n\nأهلاً بك! يمكنك هنا إنشاء جدول بالمواد التي تدرسها هذا الترم لمتابعة أحدث المحاضرات والملخصات والوصول السريع إليها.';
   
   if (edit && ctx.callbackQuery != null) {
     await ctx.editMessageText(msg, replyMarkup: kb);

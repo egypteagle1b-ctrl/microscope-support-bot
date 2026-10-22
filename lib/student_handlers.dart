@@ -184,44 +184,59 @@ void registerStudentHandlers(Bot bot) {
     if (data == null || userId == null) return;
     try { await ctx.answerCallbackQuery(text: 'جاري التحميل...'); } catch (_) {}
 
-    final parts = data.split(':');
-    final track = Utils.lengthen(parts[1]);
-    final subject = Utils.lengthen(parts[2]);
-    final typeRaw = parts[3];
-    final lang = Utils.getUserLanguage(userId);
+    try {
+      final parts = data.split(':');
+      final track = Utils.lengthen(parts[1]);
+      final subject = Utils.lengthen(parts[2]);
+      final typeRaw = parts[3];
+      final lang = Utils.getUserLanguage(userId);
 
-    if (typeRaw.startsWith('page_')) {
-      final page = int.parse(typeRaw.split('_')[1]);
-      final types = await FirebaseDb.getMaterialTypes(track, subject);
-      final keyboard = Utils.paginateKeyboard(types, page: page, prefix: 'type:${Utils.shorten(track)}:${Utils.shorten(subject)}:', backData: 'track:${Utils.shorten(track)}');
-      await ctx.editMessageText(S.get('selected_subject', lang, {'subject': subject}), replyMarkup: keyboard);
-      return;
-    }
+      if (typeRaw.startsWith('page_')) {
+        final page = int.parse(typeRaw.split('_')[1]);
+        final types = await FirebaseDb.getMaterialTypes(track, subject);
+        final keyboard = Utils.paginateKeyboard(
+          types,
+          page: page,
+          prefix: 'type:${Utils.shorten(track)}:${Utils.shorten(subject)}:',
+          backData: 'track:${Utils.shorten(track)}',
+        );
+        await ctx.editMessageText(S.get('selected_subject', lang, {'subject': subject}), replyMarkup: keyboard);
+        return;
+      }
 
-    final type = Utils.lengthen(typeRaw);
-    final materials = await FirebaseDb.getMaterials(track, subject, type);
-    if (materials.isEmpty) {
-      final kb = InlineKeyboard().row().add('🔙 Back', 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}');
-      await ctx.editMessageText(
-        '${S.get('materials_list', lang, {'type': type})}\n\n${S.get('no_files_found', lang)}',
-        replyMarkup: kb,
+      final type = Utils.lengthen(typeRaw);
+      final materials = await FirebaseDb.getMaterials(track, subject, type);
+      if (materials.isEmpty) {
+        final kb = InlineKeyboard().row().add('🔙 Back', 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}');
+        await ctx.editMessageText(
+          '${S.get('materials_list', lang, {'type': type})}\n\n${S.get('no_files_found', lang)}',
+          replyMarkup: kb,
+        );
+        return;
+      }
+
+      final itemsList = materials.entries.map((e) {
+        final name = e.value is Map ? (e.value['name']?.toString() ?? e.key) : e.value.toString();
+        return MapEntry(e.key, name);
+      }).toList();
+      
+      final keyboard = Utils.paginateMapKeyboard(
+        itemsList,
+        page: 0,
+        prefix: 'mat:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}:',
+        backData: 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}',
       );
-      return;
+
+      await ctx.editMessageText(
+        S.get('materials_list', lang, {'type': type}),
+        replyMarkup: keyboard,
+      );
+    } catch (e, stack) {
+      print('[TypeCallback] Error: $e\n$stack');
+      try {
+        await ctx.answerCallbackQuery(text: 'تعذر تحميل المواد، يرجى المحاولة مرة أخرى.', showAlert: true);
+      } catch (_) {}
     }
-
-    final itemsList = materials.entries.map((e) => MapEntry(e.key, e.value['name'].toString())).toList();
-    
-    final keyboard = Utils.paginateMapKeyboard(
-      itemsList,
-      page: 0,
-      prefix: 'mat:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}:',
-      backData: 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}',
-    );
-
-    await ctx.editMessageText(
-      S.get('materials_list', lang, {'type': type}),
-      replyMarkup: keyboard,
-    );
   });
 
   // ── Material Download ─────────────────────────────────────────────────
@@ -231,59 +246,91 @@ void registerStudentHandlers(Bot bot) {
     if (data == null || userId == null) return;
     try { await ctx.answerCallbackQuery(text: 'جاري التحميل...'); } catch (_) {}
 
-    final parts = data.split(':');
-    final track = Utils.lengthen(parts[1]);
-    final subject = Utils.lengthen(parts[2]);
-    final type = Utils.lengthen(parts[3]);
-    final materialIdRaw = parts[4];
-    final lang = Utils.getUserLanguage(userId);
+    try {
+      final parts = data.split(':');
+      final track = Utils.lengthen(parts[1]);
+      final subject = Utils.lengthen(parts[2]);
+      final type = Utils.lengthen(parts[3]);
+      final materialIdRaw = parts[4];
+      final lang = Utils.getUserLanguage(userId);
 
-    if (materialIdRaw.startsWith('page_')) {
-      final page = int.parse(materialIdRaw.split('_')[1]);
-      final materials = await FirebaseDb.getMaterials(track, subject, type);
-      final itemsList = materials.entries.map((e) => MapEntry(e.key, e.value['name'].toString())).toList();
-      final keyboard = Utils.paginateMapKeyboard(itemsList, page: page, prefix: 'mat:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}:', backData: 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}');
-      await ctx.editMessageText(S.get('materials_list', lang, {'type': type}), replyMarkup: keyboard);
-      return;
-    }
-
-    final materialId = Utils.lengthen(materialIdRaw);
-    final material = await FirebaseDb.getMaterial(track, subject, type, materialId);
-
-    if (material != null) {
-      final fileId = material['file_id'];
-      final name = material['name'] as String;
-      final fileType = material['file_type'] ?? 'document';
-      final description = material['description'] as String? ?? '';
-
-      String caption = S.get('here_is_material', lang,
-          {'name': name, 'track': track, 'subject': subject, 'type': type});
-      if (description.isNotEmpty) caption += '\n\n📝 $description';
-
-      if (fileType == 'link') {
-        await ctx.reply('$caption\n\n🔗 $fileId');
-      } else if (fileType == 'photo') {
-        final inputFile = InputFile.fromFileId(fileId);
-        await ctx.replyWithPhoto(inputFile, caption: caption);
-      } else if (fileType == 'video') {
-        final inputFile = InputFile.fromFileId(fileId);
-        await ctx.replyWithVideo(inputFile, caption: caption);
-      } else if (fileType == 'audio') {
-        final inputFile = InputFile.fromFileId(fileId);
-        await ctx.replyWithAudio(inputFile, caption: caption);
-      } else if (fileType == 'voice') {
-        final inputFile = InputFile.fromFileId(fileId);
-        await ctx.replyWithVoice(inputFile, caption: caption);
-      } else {
-        final inputFile = InputFile.fromFileId(fileId);
-        await ctx.replyWithDocument(inputFile, caption: caption);
+      if (materialIdRaw.startsWith('page_')) {
+        final page = int.parse(materialIdRaw.split('_')[1]);
+        final materials = await FirebaseDb.getMaterials(track, subject, type);
+        final itemsList = materials.entries.map((e) {
+          final name = e.value is Map ? (e.value['name']?.toString() ?? e.key) : e.value.toString();
+          return MapEntry(e.key, name);
+        }).toList();
+        final keyboard = Utils.paginateMapKeyboard(
+          itemsList,
+          page: page,
+          prefix: 'mat:${Utils.shorten(track)}:${Utils.shorten(subject)}:${Utils.shorten(type)}:',
+          backData: 'subj:${Utils.shorten(track)}:${Utils.shorten(subject)}',
+        );
+        await ctx.editMessageText(S.get('materials_list', lang, {'type': type}), replyMarkup: keyboard);
+        return;
       }
 
-      await FirebaseDb.logMaterialAccess(materialId, name);
-    } else {
-      await ctx.answerCallbackQuery(
-          text: S.get('material_not_found', lang), showAlert: true);
+      final materialId = Utils.lengthen(materialIdRaw);
+      final material = await FirebaseDb.getMaterial(track, subject, type, materialId);
+
+      if (material != null) {
+        final fileId = material['file_id']?.toString() ?? '';
+        final name = material['name']?.toString() ?? materialId;
+        final fileType = material['file_type']?.toString() ?? 'document';
+        final description = material['description'] as String? ?? '';
+
+        String caption = S.get('here_is_material', lang,
+            {'name': name, 'track': track, 'subject': subject, 'type': type});
+        if (description.isNotEmpty) caption += '\n\n📝 $description';
+
+        if (fileType == 'link' || fileId.startsWith('http://') || fileId.startsWith('https://')) {
+          await ctx.reply('$caption\n\n🔗 $fileId');
+        } else if (fileId.isEmpty || fileType == 'text' || fileType == 'string') {
+          await ctx.reply('📖 *$name*\n\n$caption', parseMode: ParseMode.markdown);
+        } else if (fileType == 'photo') {
+          final inputFile = InputFile.fromFileId(fileId);
+          await ctx.replyWithPhoto(inputFile, caption: caption);
+        } else if (fileType == 'video') {
+          final inputFile = InputFile.fromFileId(fileId);
+          await ctx.replyWithVideo(inputFile, caption: caption);
+        } else if (fileType == 'audio') {
+          final inputFile = InputFile.fromFileId(fileId);
+          await ctx.replyWithAudio(inputFile, caption: caption);
+        } else if (fileType == 'voice') {
+          final inputFile = InputFile.fromFileId(fileId);
+          await ctx.replyWithVoice(inputFile, caption: caption);
+        } else {
+          try {
+            final inputFile = InputFile.fromFileId(fileId);
+            await ctx.replyWithDocument(inputFile, caption: caption);
+          } catch (e) {
+            await ctx.reply('📖 *$name*\n\n$caption\n\n📄 $fileId');
+          }
+        }
+
+        await FirebaseDb.logMaterialAccess(materialId, name);
+      } else {
+        await ctx.answerCallbackQuery(
+            text: S.get('material_not_found', lang), showAlert: true);
+      }
+    } catch (e, stack) {
+      print('[MaterialDownload] Error: $e\n$stack');
+      try {
+        await ctx.answerCallbackQuery(text: 'حدث خطأ أثناء فتح المادة.', showAlert: true);
+      } catch (_) {}
     }
+  });
+
+  // ── Smart Search Beta callback ──────────────────────────────────────────
+  bot.callbackQuery('smart_search_beta', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    await ctx.answerCallbackQuery();
+    Utils.uploadStates[userId] = {'action': 'smart_search_query'};
+    final kb = InlineKeyboard().row().add(S.get('btn_back', lang), 'back:main');
+    await ctx.editMessageText(S.get('search_prompt', lang), replyMarkup: kb);
   });
 
   // ── Request to Contribute ──────────────────────────────────────────────────
@@ -335,6 +382,12 @@ Future<void> _sendMainMenuNew(Bot bot, Context ctx, int userId, {bool isEdit = f
   final keyboard = InlineKeyboard();
 
   keyboard.row().add(S.get('btn_departments', lang), 'show_departments');
+
+  // Schedules / Tables direct button
+  keyboard.row().add(S.get('btn_my_tables', lang), 'table_dash');
+
+  // New experimental feature labeled [BETA 🧪]
+  keyboard.row().add(S.get('btn_smart_search_beta', lang), 'smart_search_beta');
 
   final isContrib = await FirebaseDb.isContributor(userId);
   if (isContrib) {

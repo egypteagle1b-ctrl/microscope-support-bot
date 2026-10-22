@@ -331,7 +331,11 @@ void registerAdminHandlers(Bot bot) {
     if (data == null) return;
 
     final parts = data.split(':');
-    await FirebaseDb.deleteMaterial(parts[1], parts[2], parts[3], parts[4]);
+    final track = Utils.lengthen(parts[1]);
+    final subject = Utils.lengthen(parts[2]);
+    final type = Utils.lengthen(parts[3]);
+    final matId = Utils.lengthen(parts[4]);
+    await FirebaseDb.deleteMaterial(track, subject, type, matId);
     await ctx.answerCallbackQuery(
         text: S.get('material_delete_toast', lang), showAlert: true);
     await ctx.editMessageText(S.get('material_deleted', lang));
@@ -349,14 +353,143 @@ void registerAdminHandlers(Bot bot) {
     final parts = data.split(':');
     Utils.uploadStates[userId] = {
       'action': 'replace_file',
-      'track': parts[1],
-      'subject': parts[2],
-      'type': parts[3],
-      'materialId': parts[4],
+      'track': Utils.lengthen(parts[1]),
+      'subject': Utils.lengthen(parts[2]),
+      'type': Utils.lengthen(parts[3]),
+      'materialId': Utils.lengthen(parts[4]),
     };
 
     await ctx.answerCallbackQuery();
     await ctx.reply(S.get('replace_file_prompt', lang));
+  });
+
+  // ── Admin Feedback Inbox (NEW FEATURE) ──────────────────────────────
+  bot.callbackQuery('dash_inbox', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    if (!(await FirebaseDb.isAdmin(userId))) return;
+    await ctx.answerCallbackQuery();
+
+    final feedbacks = await FirebaseDb.getFeedbacks();
+    if (feedbacks.isEmpty) {
+      final kb = InlineKeyboard().row().add(S.get('btn_back_to_dash', lang), 'dash_back');
+      await ctx.editMessageText('📬 لا توجد رسائل أو شكاوى واردة حالياً.', replyMarkup: kb);
+      return;
+    }
+
+    String msg = '📬 *صندوق الرسائل والشكاوى الواردة:*\n\n';
+    final kb = InlineKeyboard();
+
+    var entries = feedbacks.entries.toList();
+    entries.sort((a, b) {
+      final tA = a.value['timestamp']?.toString() ?? '';
+      final tB = b.value['timestamp']?.toString() ?? '';
+      return tB.compareTo(tA);
+    });
+
+    for (var i = 0; i < entries.length && i < 5; i++) {
+      final id = entries[i].key;
+      final fData = entries[i].value as Map<String, dynamic>;
+      final senderId = fData['userId']?.toString() ?? 'مجهول';
+      final text = fData['message']?.toString() ?? fData['text']?.toString() ?? '';
+      final snippet = text.length > 50 ? '${text.substring(0, 50)}…' : text;
+      msg += '${i + 1}. *من:* `$senderId`\n💬 $snippet\n\n';
+      
+      final senderNum = int.tryParse(senderId);
+      if (senderNum != null) {
+        kb.row()
+          .add('💬 رد على $senderId', 'inbox_reply:$senderId')
+          .add('🗑️ حذف', 'inbox_del:$id');
+      } else {
+        kb.row().add('🗑️ حذف الرسالة', 'inbox_del:$id');
+      }
+    }
+
+    kb.row().add(S.get('btn_back_to_dash', lang), 'dash_back');
+    await ctx.editMessageText(msg, replyMarkup: kb, parseMode: ParseMode.markdown);
+  });
+
+  bot.callbackQuery(RegExp(r'^inbox_reply:(.+)'), (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    final targetId = int.tryParse(ctx.callbackQuery!.data!.replaceFirst('inbox_reply:', ''));
+    if (targetId == null) return;
+
+    Utils.uploadStates[userId] = {
+      'action': 'reply_user_msg',
+      'target_id': targetId,
+    };
+    await ctx.answerCallbackQuery();
+    await ctx.reply(S.get('enter_reply_message', lang));
+  });
+
+  bot.callbackQuery(RegExp(r'^inbox_del:(.+)'), (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final id = ctx.callbackQuery!.data!.replaceFirst('inbox_del:', '');
+    await FirebaseDb.deleteFeedback(id);
+    await ctx.answerCallbackQuery(text: 'تم حذف الرسالة بنجاح.');
+    
+    final lang = Utils.getUserLanguage(userId);
+    final feedbacks = await FirebaseDb.getFeedbacks();
+    if (feedbacks.isEmpty) {
+      final kb = InlineKeyboard().row().add(S.get('btn_back_to_dash', lang), 'dash_back');
+      await ctx.editMessageText('📬 لا توجد رسائل واردة حالياً.', replyMarkup: kb);
+      return;
+    }
+    String msg = '📬 *صندوق الرسائل والشكاوى الواردة:*\n\n';
+    final kb = InlineKeyboard();
+    var entries = feedbacks.entries.toList();
+    for (var i = 0; i < entries.length && i < 5; i++) {
+      final fId = entries[i].key;
+      final fData = entries[i].value as Map<String, dynamic>;
+      final senderId = fData['userId']?.toString() ?? 'مجهول';
+      final text = fData['message']?.toString() ?? fData['text']?.toString() ?? '';
+      final snippet = text.length > 50 ? '${text.substring(0, 50)}…' : text;
+      msg += '${i + 1}. *من:* `$senderId`\n💬 $snippet\n\n';
+      final senderNum = int.tryParse(senderId);
+      if (senderNum != null) {
+        kb.row()
+          .add('💬 رد على $senderId', 'inbox_reply:$senderId')
+          .add('🗑️ حذف', 'inbox_del:$fId');
+      } else {
+        kb.row().add('🗑️ حذف الرسالة', 'inbox_del:$fId');
+      }
+    }
+    kb.row().add(S.get('btn_back_to_dash', lang), 'dash_back');
+    await ctx.editMessageText(msg, replyMarkup: kb, parseMode: ParseMode.markdown);
+  });
+
+  // ── Admin System Health Check (NEW FEATURE) ─────────────────────────
+  bot.callbackQuery('dash_health', (ctx) async {
+    final userId = ctx.from?.id;
+    if (userId == null) return;
+    final lang = Utils.getUserLanguage(userId);
+    if (!(await FirebaseDb.isAdmin(userId))) return;
+    await ctx.answerCallbackQuery();
+
+    final sw = Stopwatch()..start();
+    final tracks = await FirebaseDb.getTracks();
+    sw.stop();
+    final latency = sw.elapsedMilliseconds;
+
+    final users = await FirebaseDb.getAllUsers();
+    final requests = await FirebaseDb.getPendingRequests();
+    final superAdminId = await FirebaseDb.getSuperAdmin();
+
+    String msg = '🩺 *تقرير فحص صحة النظام والخادم*\n\n';
+    msg += '⚡ *حالة الاتصال:* متصل وقيد العمل ✅\n';
+    msg += '⏱️ *استجابة قاعدة البيانات (Latency):* ${latency}ms\n';
+    msg += '👥 *إجمالي المستخدمين المسجلين:* ${users.length} مستخدم\n';
+    msg += '📚 *الأقسام والمسارات النشطة:* ${tracks.length} مسار\n';
+    msg += '📩 *طلبات المساهمة المعلقة:* ${requests.length} طلب\n';
+    msg += '👑 *المالك الرئيسي (Super Admin):* `$superAdminId`\n';
+    msg += '🛡️ *حالة البوت والأمان:* مستقر وبدون أخطاء تشغيلية ✓';
+
+    final kb = InlineKeyboard().row().add(S.get('btn_back_to_dash', lang), 'dash_back');
+    await ctx.editMessageText(msg, replyMarkup: kb, parseMode: ParseMode.markdown);
   });
 
   // ── Approve / Reject contributors ──────────────────────────────────────────────

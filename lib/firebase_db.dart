@@ -230,27 +230,39 @@ class FirebaseDb {
   // Get subjects for a track
   static Future<List<String>> getSubjects(String track) async {
     final data = await _get('/curriculum/$track');
-    if (data == null) return [];
-    return (data as Map<String, dynamic>).keys.where((k) => k != '_placeholder').toList();
+    if (data == null || data is! Map) return [];
+    return data.keys.map((k) => k.toString()).where((k) => k != '_placeholder').toList();
   }
 
   // Get material types for a subject
   static Future<List<String>> getMaterialTypes(String track, String subject) async {
     final data = await _get('/curriculum/$track/$subject');
-    if (data == null) return [];
-    return (data as Map<String, dynamic>).keys.where((k) => k != '_placeholder').toList();
+    if (data == null || data is! Map) return [];
+    return data.keys.map((k) => k.toString()).where((k) => k != '_placeholder').toList();
   }
 
-  // Get materials for a type (filters out _placeholder and non-Map entries)
+  // Get materials for a type (filters out _placeholder and handles strings / maps safely)
   static Future<Map<String, dynamic>> getMaterials(String track, String subject, String type) async {
     final data = await _get('/curriculum/$track/$subject/$type');
     if (data == null) return {};
-    final raw = data as Map<String, dynamic>;
-    // Filter out _placeholder entries and entries where value is not a Map
-    return Map.fromEntries(
-      raw.entries.where((e) =>
-        e.key != '_placeholder' && e.value is Map<String, dynamic>),
-    );
+    if (data is Map) {
+      final res = <String, dynamic>{};
+      data.forEach((k, v) {
+        final keyStr = k.toString();
+        if (keyStr == '_placeholder') return;
+        if (v is Map) {
+          final m = Map<String, dynamic>.from(v);
+          m['name'] = m['name'] ?? m['title'] ?? m['file_name'] ?? keyStr;
+          res[keyStr] = m;
+        } else if (v != null) {
+          res[keyStr] = {'name': v.toString(), 'file_id': '', 'file_type': 'text'};
+        }
+      });
+      return res;
+    } else if (data is String) {
+      return {'content': {'name': data, 'file_id': '', 'file_type': 'text'}};
+    }
+    return {};
   }
 
   // Add material
@@ -289,7 +301,7 @@ class FirebaseDb {
     await _delete('/contributor_materials/$userId');
   }
 
-  // Delete material
+  // Delete material (deletes ONLY the specific material node)
   static Future<void> deleteMaterial(String track, String subject, String type, String materialId) async {
     await _delete('/curriculum/$track/$subject/$type/$materialId');
   }
@@ -300,7 +312,119 @@ class FirebaseDb {
   }
   
   static Future<Map<String, dynamic>?> getMaterial(String track, String subject, String type, String materialId) async {
-     return await _get('/curriculum/$track/$subject/$type/$materialId');
+     final data = await _get('/curriculum/$track/$subject/$type/$materialId');
+     if (data == null) return null;
+     if (data is Map) {
+       final m = Map<String, dynamic>.from(data);
+       m['name'] = m['name'] ?? m['title'] ?? m['file_name'] ?? materialId;
+       return m;
+     } else if (data != null) {
+       return {'name': data.toString(), 'file_id': '', 'file_type': 'text'};
+     }
+     return null;
+  }
+
+  // Search curriculum across all tracks, subjects, and materials
+  static Future<List<Map<String, dynamic>>> searchCurriculum(String query) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    final data = await _get('/curriculum');
+    if (data == null || data is! Map) return [];
+    
+    final results = <Map<String, dynamic>>[];
+    data.forEach((tKey, subjects) {
+      if (tKey == '_placeholder' || subjects is! Map) return;
+      final track = tKey.toString();
+      subjects.forEach((sKey, types) {
+        if (sKey == '_placeholder' || types is! Map) return;
+        final subject = sKey.toString();
+        
+        if (subject.toLowerCase().contains(q)) {
+          results.add({
+            'kind': 'subject',
+            'track': track,
+            'subject': subject,
+            'title': '📋 $subject ($track)',
+          });
+        }
+
+        types.forEach((tyKey, mats) {
+          if (tyKey == '_placeholder' || mats is! Map) return;
+          final type = tyKey.toString();
+          mats.forEach((mKey, mVal) {
+            if (mKey == '_placeholder') return;
+            String mName = mKey.toString();
+            String fType = 'document';
+            if (mVal is Map) {
+              mName = mVal['name']?.toString() ?? mName;
+              fType = mVal['file_type']?.toString() ?? fType;
+            } else if (mVal is String) {
+              mName = mVal;
+            }
+            if (mName.toLowerCase().contains(q) || type.toLowerCase().contains(q)) {
+              results.add({
+                'kind': 'material',
+                'track': track,
+                'subject': subject,
+                'matType': type,
+                'materialId': mKey.toString(),
+                'title': '📄 $mName ($subject)',
+                'file_type': fType,
+              });
+            }
+          });
+        });
+      });
+    });
+    return results.take(15).toList();
+  }
+
+  // Get latest updates for a list of registered subjects in tables
+  static Future<List<Map<String, dynamic>>> getLatestScheduleUpdates(List<String> userSubjects, [int limit = 6]) async {
+    final data = await _get('/curriculum');
+    if (data == null || data is! Map) return [];
+    
+    final updates = <Map<String, dynamic>>[];
+    data.forEach((tKey, subjects) {
+      if (tKey == '_placeholder' || subjects is! Map) return;
+      final track = tKey.toString();
+      subjects.forEach((sKey, types) {
+        if (sKey == '_placeholder' || types is! Map) return;
+        final subject = sKey.toString();
+        
+        if (!userSubjects.contains(subject)) return;
+
+        types.forEach((tyKey, mats) {
+          if (tyKey == '_placeholder' || mats is! Map) return;
+          final type = tyKey.toString();
+          mats.forEach((mKey, mVal) {
+            if (mKey == '_placeholder') return;
+            String mName = mKey.toString();
+            String fType = 'document';
+            if (mVal is Map) {
+              mName = mVal['name']?.toString() ?? mName;
+              fType = mVal['file_type']?.toString() ?? fType;
+            } else if (mVal is String) {
+              mName = mVal;
+            }
+            updates.add({
+              'track': track,
+              'subject': subject,
+              'type': type,
+              'matId': mKey.toString(),
+              'name': mName,
+              'file_type': fType,
+            });
+          });
+        });
+      });
+    });
+    return updates.reversed.take(limit).toList();
+  }
+
+  static Future<void> deleteFeedback(String feedbackId) async {
+    await _delete('/feedbacks/$feedbackId');
+    await _delete('/feedback/$feedbackId');
   }
 
   // --- Analytics ---
