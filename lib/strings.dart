@@ -107,6 +107,30 @@ class S {
       'ar': '📤 مشاركة بطاقة الجدول',
       'en': '📤 Share Schedule Card',
     },
+    'btn_student_tools_beta': {
+      'ar': '✨ أدوات المذاكرة والإنتاجية [BETA 🧪]',
+      'en': '✨ Smart Study Tools [BETA 🧪]',
+    },
+    'btn_my_favorites_beta': {
+      'ar': '🔖 مفضلاتي ومحفوظاتي [BETA 🧪]',
+      'en': '🔖 My Saved & Bookmarks [BETA 🧪]',
+    },
+    'btn_pomodoro_beta': {
+      'ar': '⏱ مؤقت التركيز (بومودورو) [BETA 🧪]',
+      'en': '⏱ Pomodoro Focus Timer [BETA 🧪]',
+    },
+    'btn_gpa_calc_beta': {
+      'ar': '📊 حاسبة المعدل التراكمي GPA [BETA 🧪]',
+      'en': '📊 GPA Calculator [BETA 🧪]',
+    },
+    'btn_study_tips_beta': {
+      'ar': '💡 تقنيات المذاكرة والحفظ الفعال [BETA 🧪]',
+      'en': '💡 Effective Study Techniques [BETA 🧪]',
+    },
+    'btn_add_favorite': {
+      'ar': '⭐️ حفظ في المفضلة',
+      'en': '⭐️ Save to Bookmarks',
+    },
     'no_tracks': {
       'ar': 'لا توجد مسارات بعد',
       'en': 'No tracks available yet',

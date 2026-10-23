@@ -91,6 +91,179 @@ Future<void> handleUploadText(Context ctx, Bot bot) async {
       Utils.clearUploadState(userId);
       break;
 
+    case 'bcast_track_msg':
+      final track = state['track'] as String? ?? '';
+      await ctx.reply('جاري إرسال الإشعار لطلاب مسار "$track"... ⏳');
+      final trackUsers = await FirebaseDb.getUsersForTrack(track);
+      if (trackUsers.isEmpty) {
+        await ctx.reply('⚠️ لم يتم العثور على طلاب مسجلين في هذا المسار حالياً.');
+      } else {
+        Utils.broadcast(bot, trackUsers, '📢 *تنبيه لطلاب [$track]:*\n\n$text');
+        await ctx.reply('✅ تم إرسال الإشعار بنجاح إلى ${trackUsers.length} طالب في مسار "$track".');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'bcast_contribs_msg':
+      await ctx.reply('جاري إرسال الإشعار لجميع المساهمين... ⏳');
+      final contribs = await FirebaseDb.getAllContributors();
+      final contribIds = contribs.keys.map((k) => int.tryParse(k)).whereType<int>().toList();
+      if (contribIds.isEmpty) {
+        await ctx.reply('⚠️ لا يوجد مساهمون مسجلون حالياً.');
+      } else {
+        Utils.broadcast(bot, contribIds, '📢 *تنبيه خاص للمساهمين في الفريق:* 🤝\n\n$text');
+        await ctx.reply('✅ تم إرسال الإشعار بنجاح إلى ${contribIds.length} مساهم.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'adm_ban_id':
+      final banTarget = int.tryParse(text.trim());
+      if (banTarget != null) {
+        await FirebaseDb.banUser(banTarget);
+        await ctx.reply('🚫 تم حظر المستخدم `$banTarget` وحرمانه من استخدام البوت بنجاح.', parseMode: ParseMode.markdown);
+      } else {
+        await ctx.reply('❌ صيغة الـ ID غير صحيحة.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'adm_unban_id':
+      final unbanTarget = int.tryParse(text.trim());
+      if (unbanTarget != null) {
+        await FirebaseDb.unbanUser(unbanTarget);
+        await ctx.reply('🟢 تم فك الحظر عن المستخدم `$unbanTarget` بنجاح.', parseMode: ParseMode.markdown);
+      } else {
+        await ctx.reply('❌ صيغة الـ ID غير صحيحة.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'adm_lookup_id':
+      final lookupTarget = int.tryParse(text.trim());
+      if (lookupTarget != null) {
+        final isBanned = await FirebaseDb.isBanned(lookupTarget);
+        final isAdmin = await FirebaseDb.isAdmin(lookupTarget);
+        final isContrib = await FirebaseDb.isContributor(lookupTarget);
+        final userLang = await FirebaseDb.getUserLanguage(lookupTarget);
+        final tables = await FirebaseDb.getTables(lookupTarget);
+
+        final buffer = StringBuffer('👤 *تقرير حساب المستخدم:* `$lookupTarget`\n\n');
+        buffer.writeln('• الرتبة: ${isAdmin ? '👑 أدمن' : isContrib ? '🤝 مساهم' : '🎓 طالب'}');
+        buffer.writeln('• حالة الحظر: ${isBanned ? '🚫 محظور' : '🟢 نشط وغير محظور'}');
+        buffer.writeln('• اللغة المفضلة: $userLang');
+        buffer.writeln('• عدد الجداول المسجلة: ${tables.length}');
+        if (tables.isNotEmpty) {
+          buffer.writeln('\n📅 *الجداول والمواد المسجلة:*');
+          tables.forEach((tName, tData) {
+            buffer.writeln('  ▫️ جدول: $tName (${tData['track'] ?? ''})');
+          });
+        }
+        await ctx.reply(buffer.toString(), parseMode: ParseMode.markdown);
+      } else {
+        await ctx.reply('❌ صيغة الـ ID غير صحيحة.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'adm_add_track_name':
+      final newTrack = text.trim();
+      if (newTrack.isNotEmpty) {
+        await FirebaseDb.addTrack(newTrack);
+        await ctx.reply('✅ تمت إضافة المسار "$newTrack" إلى شجرة المناهج بنجاح!');
+      } else {
+        await ctx.reply('❌ اسم المسار لا يمكن أن يكون فارغاً.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'adm_add_subj_name':
+      final newSubj = text.trim();
+      final track = state['track'] as String? ?? '';
+      if (newSubj.isNotEmpty && track.isNotEmpty) {
+        await FirebaseDb.addSubject(track, newSubj);
+        await ctx.reply('✅ تمت إضافة مادة "$newSubj" إلى مسار "$track" بنجاح!');
+      } else {
+        await ctx.reply('❌ حدث خطأ، يرجى إعادة المحاولة.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'inbox_reply_msg':
+      final targetId = state['target_id'] as int;
+      try {
+        await bot.api.sendMessage(
+          ChatID(targetId),
+          '📩 *رد من إدارة ميكروسكوب على رسالتك:*\n\n$text',
+          parseMode: ParseMode.markdown,
+        );
+        await ctx.reply('✅ تم إرسال الرد إلى الطالب بنجاح!');
+      } catch (e) {
+        await ctx.reply('❌ تعذر إرسال الرد: ربما قام المستخدم بحظر البوت.');
+      }
+      Utils.clearUploadState(userId);
+      break;
+
+    case 'mis_new_title':
+      final title = text.trim();
+      if (title.isEmpty) {
+        await ctx.reply('❌ العنوان لا يمكن أن يكون فارغاً.');
+        Utils.clearUploadState(userId);
+        return;
+      }
+      state['title'] = title;
+      state['action'] = 'mis_new_committee';
+      
+      final kb = InlineKeyboard()
+        .row().add('HR 👥', 'mis_com:HR').add('PR 📣', 'mis_com:PR').add('Social Media 📱', 'mis_com:Social Media')
+        .row().add('Academic 📚', 'mis_com:Academic').add('Data 📊', 'mis_com:Data').add('IT & Dev 💻', 'mis_com:IT')
+        .row().add('Operations / PM ⚙️', 'mis_com:PM').add('عامة لكافة اللجان 🌐', 'mis_com:General');
+
+      await ctx.reply('تم حفظ العنوان: *$title*\n\nالآن اختر اللجنة المسؤولة عن هذا التكليف:', parseMode: ParseMode.markdown, replyMarkup: kb);
+      break;
+
+    case 'mis_new_desc':
+      final desc = text.trim();
+      final title = state['title'] as String? ?? 'مهمة جديدة';
+      final committee = state['committee'] as String? ?? 'General';
+      final category = state['category'] as String? ?? 'execution';
+      final priority = state['priority'] as String? ?? 'high';
+      final deadline = state['deadline'] as String? ?? 'غير محدد';
+      final taskId = 'tsk_' + DateTime.now().millisecondsSinceEpoch.toString();
+
+      await FirebaseDb.saveMission(taskId, {
+        'id': taskId,
+        'title': title,
+        'description': desc,
+        'category': category,
+        'committees': committee,
+        'head_name': 'إدارة المنظومة (Admin)',
+        'priority': priority,
+        'status': 'progress',
+        'due_date': deadline,
+        'created_at': DateTime.now().toIso8601String(),
+        'assigned_by': userId.toString(),
+      });
+
+      Utils.clearUploadState(userId);
+
+      final missionCard = '🎯 *تم إنشاء وتكليف المهمة بنجاح!* ✅\n'
+          '━━━━━━━━━━━━━━━━━━━━\n'
+          '📌 *العنوان:* $title\n'
+          '🏢 *اللجنة:* $committee\n'
+          '📅 *الموعد النهائي:* $deadline\n'
+          '🚥 *الحالة:* قيد التنفيذ ⚡\n\n'
+          '📝 *التفاصيل:* $desc\n'
+          '━━━━━━━━━━━━━━━━━━━━\n'
+          '💡 تمت مزامنة المهمة فوراً مع البوت ولوحة الويب.';
+
+      final cardKb = InlineKeyboard()
+        .row().add('📢 إرسال بطاقة التكليف لقناة اللجان', 'mis_dispatch:$taskId')
+        .row().add('🔙 إدارة المهام', 'adm_missions');
+
+      await ctx.reply(missionCard, parseMode: ParseMode.markdown, replyMarkup: cardKb);
+      break;
+
     // ---- Contributor request (name only) ---------------------------------
     case 'req_contribute_name':
       final fullName = text.trim().isNotEmpty

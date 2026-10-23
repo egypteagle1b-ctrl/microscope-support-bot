@@ -533,7 +533,7 @@ Future<void> _handleWebRequest(HttpRequest req, Bot bot) async {
 /// Uploads [bytes] as a PDF file named [fileName] to the configured Google Drive
 /// folder, using a Service Account for authentication.
 /// Returns the Drive file ID on success, or null on failure.
-Future<String?> _uploadToDrive(List<int> bytes, String fileName) async {
+Future<String?> uploadToDrive(List<int> bytes, String fileName) async {
   final folderId = Config.googleDriveFolderId;
   final saJson = Config.googleServiceAccountJson;
 
@@ -766,7 +766,14 @@ Future<void> main() async {
   });
 
   print('Bot is polling...');
-  bot.start();
+  while (true) {
+    try {
+      await bot.start();
+    } catch (e) {
+      print('Bot start/poll connection error: $e. Reconnecting in 3 seconds...');
+      await Future.delayed(const Duration(seconds: 3));
+    }
+  }
 }
 
 class BanCheck implements Middleware {

@@ -150,6 +150,14 @@ class FirebaseDb {
     return data != null && data == true;
   }
 
+  static Future<void> banUser(int userId) async {
+    await _put('/banned_users/$userId', true);
+  }
+
+  static Future<void> unbanUser(int userId) async {
+    await _delete('/banned_users/$userId');
+  }
+
   // --- Contributors ---
 
   static Future<void> setContributor(int userId, {String name = ''}) async {
@@ -232,6 +240,29 @@ class FirebaseDb {
     final data = await _get('/curriculum/$track');
     if (data == null || data is! Map) return [];
     return data.keys.map((k) => k.toString()).where((k) => k != '_placeholder').toList();
+  }
+
+  // Add a track to curriculum
+  static Future<void> addTrack(String track) async {
+    final clean = track.trim();
+    if (clean.isEmpty) return;
+    await _put('/curriculum/$clean/_placeholder', true);
+  }
+
+  // Add a subject to a track
+  static Future<void> addSubject(String track, String subject) async {
+    final cleanT = track.trim();
+    final cleanS = subject.trim();
+    if (cleanT.isEmpty || cleanS.isEmpty) return;
+    await _put('/curriculum/$cleanT/$cleanS/_placeholder', true);
+  }
+
+  // Delete a subject from a track
+  static Future<void> deleteSubject(String track, String subject) async {
+    final cleanT = track.trim();
+    final cleanS = subject.trim();
+    if (cleanT.isEmpty || cleanS.isEmpty) return;
+    await _delete('/curriculum/$cleanT/$cleanS');
   }
 
   // Get material types for a subject
@@ -578,6 +609,168 @@ class FirebaseDb {
 
   static Future<bool> saveMember(String id, Map<String, dynamic> data) async {
     return await _put('/members/$id', data);
+  }
+
+  // --- Favorites (Bookmarks) [BETA] ---
+  static Future<void> addFavorite(int userId, String track, String subject, String type, String matId, String title) async {
+    final rawKey = '$track|$subject|$matId';
+    final favKey = 'fav_${rawKey.hashCode.abs()}';
+    await _put('/users/$userId/favorites/$favKey', {
+      'track': track,
+      'subject': subject,
+      'type': type,
+      'mat_id': matId,
+      'title': title,
+      'saved_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static Future<Map<String, dynamic>> getFavorites(int userId) async {
+    final data = await _get('/users/$userId/favorites');
+    if (data == null || data is! Map) return {};
+    return Map<String, dynamic>.from(data);
+  }
+
+  static Future<void> removeFavorite(int userId, String favKey) async {
+    await _delete('/users/$userId/favorites/$favKey');
+  }
+
+  // --- Users by Track ---
+  static Future<List<int>> getUsersForTrack(String track) async {
+    final data = await _get('/users');
+    if (data == null || data is! Map) return [];
+    final List<int> usersInTrack = [];
+    data.forEach((uidStr, val) {
+      if (val is Map && val.containsKey('tables')) {
+        final tables = val['tables'];
+        if (tables is Map) {
+          for (var t in tables.values) {
+            if (t is Map && t['track'] == track) {
+              final id = int.tryParse(uidStr.toString());
+              if (id != null) usersInTrack.add(id);
+              break;
+            }
+          }
+        }
+      }
+    });
+    return usersInTrack;
+  }
+
+  // ─── Microscope Missions ───
+  static Future<Map<String, dynamic>> getMissions({String? status, String? category}) async {
+    final data = await _get('/missions');
+    if (data == null || data is! Map) return {};
+    final map = Map<String, dynamic>.from(data);
+    if (status != null && status.isNotEmpty && status != 'all') {
+      map.removeWhere((_, v) => v is! Map || v['status'] != status);
+    }
+    if (category != null && category.isNotEmpty && category != 'all') {
+      map.removeWhere((_, v) => v is! Map || v['category'] != category);
+    }
+    return map;
+  }
+
+  static Future<Map<String, dynamic>?> getMission(String id) async {
+    final data = await _get('/missions/$id');
+    if (data == null || data is! Map) return null;
+    return Map<String, dynamic>.from(data);
+  }
+
+  static Future<void> saveMission(String id, Map<String, dynamic> mission) async {
+    await _put('/missions/$id', mission);
+  }
+
+  static Future<void> updateMissionStatus(String id, String status) async {
+    await _patch('/missions/$id', {
+      'status': status,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static Future<void> deleteMission(String id) async {
+    await _delete('/missions/$id');
+  }
+
+  static Future<void> seedOfficialMissions() async {
+    final defaultTasks = [
+      {
+        'id': 'tsk_p1_interviews',
+        'category': 'timeline',
+        'title': 'المرحلة الأولى: التقديمات والمقابلات (Interviews)',
+        'due_date': '2026-10-21',
+        'description': 'إعلان فتح باب التقديم ومتابعة الاستمارات، فرز المتقدمين وتحديد مواعيد المقابلات واختيار المقبولين.',
+        'committees': 'HR, PR, Social Media',
+        'head_name': 'مسؤول الموارد البشرية (HR Head)',
+        'priority': 'high',
+        'status': 'progress',
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      {
+        'id': 'tsk_p2_onboarding',
+        'category': 'timeline',
+        'title': 'المرحلة الثانية: التسكين والترحيب بالأعضاء الجدد',
+        'due_date': '2026-10-24',
+        'description': 'إضافة الأعضاء المقبولين إلى لجانهم الرسمية بعد فرز المقابلات وإرسال رسائل الترحيب الرسمية وتوجيههم.',
+        'committees': 'HR, PR, PM',
+        'head_name': 'إدارة العمليات والـ HR',
+        'priority': 'high',
+        'status': 'received',
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      {
+        'id': 'tsk_p3_curriculum_audit',
+        'category': 'execution',
+        'title': 'المرحلة الثالثة: تدقيق المناهج وحصر النواقص العلمية',
+        'due_date': '2026-11-05',
+        'description': 'مراجعة المناهج والأقسام، والتأكد من رفع جميع المحاضرات والملخصات لجميع الفرق الدراسية وسد أي ثغرات.',
+        'committees': 'Academic, Data, IT',
+        'head_name': 'مسؤول اللجنة الأكاديمية والبيانات',
+        'priority': 'high',
+        'status': 'progress',
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      {
+        'id': 'tsk_p4_bot_v2_launch',
+        'category': 'execution',
+        'title': 'المرحلة الرابعة: إطلاق النسخة المطورة من بوت وتطبيقات ميكروسكوب',
+        'due_date': '2026-11-15',
+        'description': 'تدشين الميزات الذكية (البحث الذكي، أدوات الطالب، إدارة المهام، ونظام الإشعارات التلقائية).',
+        'committees': 'IT, PM, PR',
+        'head_name': 'فريق التطوير والـ IT Lead',
+        'priority': 'high',
+        'status': 'progress',
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      {
+        'id': 'tsk_p5_midterm_support',
+        'category': 'term2',
+        'title': 'المرحلة الخامسة: حملة دعم امتحانات الميدتيرم وبنوك الأسئلة',
+        'due_date': '2026-11-28',
+        'description': 'توفير بنوك أسئلة تفاعلية ومراجعات ليلة الامتحان للطلاب مع دعم فني مستمر وإرشاد دراسي مكثف.',
+        'committees': 'Academic, Social Media, PR',
+        'head_name': 'لجنة المحتوى الأكاديمي',
+        'priority': 'normal',
+        'status': 'received',
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      {
+        'id': 'tsk_p6_institutional_dev',
+        'category': 'improvement',
+        'title': 'المرحلة السادسة: أتمتة التقارير الشهرية والتطوير المؤسسي',
+        'due_date': '2026-12-10',
+        'description': 'بناء لوحات مؤشرات الأداء KPIs ومتابعة معدل إنجاز اللجان وملاحظات الطلاب واستبيانات الجودة.',
+        'committees': 'HR, PM, IT',
+        'head_name': 'الإدارة العليا للعمليات',
+        'priority': 'normal',
+        'status': 'received',
+        'created_at': DateTime.now().toIso8601String(),
+      }
+    ];
+
+    for (var t in defaultTasks) {
+      await saveMission(t['id'] as String, t);
+    }
   }
 
 }
