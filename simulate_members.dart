@@ -11,7 +11,7 @@ void main() async {
   
   for (int i = 1; i <= 3; i++) {
     final id = DateTime.now().millisecondsSinceEpoch.toString() + i.toString();
-    final isMale = random.nextBool();
+    //final isMale = random.nextBool();
     final name = 'Test User $i';
     
     final memberData = {

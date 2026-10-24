@@ -1220,7 +1220,10 @@ Future<InlineKeyboard> _buildAdminKeyboard(int userId, String lang) async {
     // Row 5: Web Links & Fast Tools
     .row()
     .add('🌐 روابط شاشات المهام المباشرة', 'adm_web_links')
-    .add(S.get('btn_reply_user', lang), 'dash_reply_user');
+    .add(S.get('btn_reply_user', lang), 'dash_reply_user')
+    // Row 6: Miko AI Assistant Bot
+    .row()
+    .addUrl('🤖 كلّم ميكو (المساعد الذكي)', 'https://t.me/micoat_bot');
 
   if (isSuperAdmin) {
     keyboard.row()

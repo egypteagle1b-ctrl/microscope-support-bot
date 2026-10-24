@@ -113,6 +113,16 @@ void registerStudentHandlers(Bot bot) {
         text: S.get('no_tracks', lang), showAlert: false);
   });
 
+  // ── Miko Coming Soon Callback ──────────────────────────────────────────
+  bot.callbackQuery('miko_coming_soon', (ctx) async {
+    final userId = ctx.from?.id;
+    final lang = userId != null ? Utils.getUserLanguage(userId) : 'ar';
+    final alertMsg = lang == 'en'
+        ? '🤖 Miko AI is coming soon! Stay tuned ⏳'
+        : '🤖 مساعدك الذكي "ميكو" قريباً جداً! انتظرونا ⏳ (Coming Soon)';
+    await ctx.answerCallbackQuery(text: alertMsg, showAlert: true);
+  });
+
   // ── Track Selection ───────────────────────────────────────────────────
   bot.callbackQuery(RegExp(r'^track:(.*)'), (ctx) async {
     final data = ctx.callbackQuery?.data;
@@ -759,6 +769,9 @@ Future<void> _sendMainMenuNew(Bot bot, Context ctx, int userId, {bool isEdit = f
 
   // Schedules / Tables direct button
   keyboard.row().add(S.get('btn_my_tables', lang), 'table_dash');
+
+  // Miko AI Assistant Bot
+  keyboard.row().add(S.get('btn_chat_miko', lang), 'miko_coming_soon');
 
   // New experimental features labeled [BETA 🧪]
   keyboard.row().add(S.get('btn_smart_search_beta', lang), 'smart_search_beta');

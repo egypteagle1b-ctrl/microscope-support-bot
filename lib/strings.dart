@@ -59,6 +59,10 @@ class S {
       'ar': '🔍 البحث الذكي في المواد [BETA 🧪]',
       'en': '🔍 Smart Material Search [BETA 🧪]',
     },
+    'btn_chat_miko': {
+      'ar': '🤖 كلّم ميكو (المساعد الذكي)',
+      'en': '🤖 Chat with Miko (AI)',
+    },
     'search_prompt': {
       'ar': '🔍 أرسل اسم المادة أو المحاضرة أو كلمة مفتاحية للبحث عنها في كل الأقسام:\n(أرسل /start للإلغاء)',
       'en': '🔍 Send a subject, lecture name, or keyword to search across all tracks:\n(Send /start to cancel)',
